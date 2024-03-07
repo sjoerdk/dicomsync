@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "dicomsync"
+version = "0.1.0"
+description = "Synchronize medical imaging studies between storage modalities"
+authors = ["sjoerdk <sjoerd.kerkstra@radboudumc.nl>"]
+license = "apache"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
