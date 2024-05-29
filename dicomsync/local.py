@@ -1,9 +1,13 @@
 """Handling imaging studies on local disks"""
+import shutil
 from pathlib import Path
 from shutil import copyfile
 from typing import List, Union
 
 from dicomsync.core import ImagingStudy, Place, Subject, make_slug
+from dicomsync.logs import get_module_logger
+
+logger = get_module_logger("local")
 
 
 class DICOMStudyFolder(ImagingStudy):
@@ -13,8 +17,7 @@ class DICOMStudyFolder(ImagingStudy):
     """
 
     def __init__(self, subject: Subject, description: str, path: Union[Path, str]):
-        super().__init__(subject)
-        self.description = description
+        super().__init__(subject, description)
         self.path = Path(path)
 
     def key(self) -> str:
@@ -43,7 +46,10 @@ class DICOMRootFolder(Place):
     """
 
     def __init__(self, path: Path):
-        self.path = path
+        self.path = Path(path)
+
+    def __str__(self):
+        return f"Root folder at '{self.path}'"
 
     def contains(self, study: ImagingStudy) -> bool:
         """Return true if this place contains this ImagingStudy"""
@@ -66,6 +72,12 @@ class DICOMRootFolder(Place):
     def send_dicom_folder(self, folder: DICOMStudyFolder):
         """Send a DICOMStudyFolder to here"""
 
+        logger.debug(f"Sending {folder} to {self}")
+        if not folder.path.exists():
+            raise ValueError(
+                f"{folder.path} does not exist. Cannot find data for" f" {folder}"
+            )
+
         study_path = self.path / folder.subject.name / folder.description
 
         if study_path.exists():
@@ -73,5 +85,86 @@ class DICOMRootFolder(Place):
                 raise ValueError(f"{study_path} already exists and is not empty")
 
         study_path.mkdir(exist_ok=True, parents=True)
+        count = 0
         for file in folder.all_files():
-            copyfile(file, study_path)
+            count += 1
+            copyfile(file, study_path / file.name)
+
+        logger.debug(f"copied {count} files to {self}")
+
+
+class ZippedDICOMStudy(ImagingStudy):
+    """A local zipfile containing all the DICOM files for a single imaging study
+
+    description and subject need to be valid slugs
+    """
+
+    def __init__(self, subject: Subject, description: str, path: Union[Path, str]):
+        super().__init__(subject, description)
+        self.path = Path(path)
+
+    def key(self) -> str:
+        return make_slug(f"{self.subject.name}_{self.description}")
+
+    def __str__(self):
+        return f"ZippedDICOMStudy {self.subject.name} - {self.description}: {self.path}"
+
+
+class ZippedDICOMRootFolder(Place):
+    """A folder patient/study.zip structure.
+
+    Each subfolder represents a patient. In each patient folder there is a zipfile
+    for each study
+
+    base_path/
+        subject1/
+            study1.zip
+            study2.zip
+        subject2/
+            study1.zip
+        etc..
+    """
+
+    def __init__(self, path: Path):
+        self.path = Path(path)
+
+    def __str__(self):
+        return f"Root folder at '{self.path}'"
+
+    def contains(self, study: ImagingStudy) -> bool:
+        """Return true if this place contains this ImagingStudy"""
+        return study.key() in (x.key() for x in self.all_studies())
+
+    def all_studies(self) -> List[ZippedDICOMStudy]:
+        studies = []
+        for folder in [x for x in self.path.glob("*") if x.is_dir()]:
+            for zipfile in [x for x in folder.glob("*.zip") if x.is_file()]:
+                studies.append(
+                    ZippedDICOMStudy(
+                        subject=Subject(folder.name),
+                        description=zipfile.stem,  # remove .zip extension
+                        path=zipfile,
+                    )
+                )
+
+        return studies
+
+    def send_dicom_folder(self, folder: DICOMStudyFolder):
+        """Zip this DICOMStudyFolder and save here"""
+
+        logger.debug(f"Zipping {folder} to {self}")
+        if not folder.path.exists():
+            raise ValueError(
+                f"{folder.path} does not exist. Cannot find data for" f" {folder}"
+            )
+
+        zip_path = self.path / folder.subject.name / f"{folder.description}.zip"
+
+        if zip_path.exists():
+            raise ValueError(f"{zip_path} already exists. I'm not overwriting this")
+
+        zip_path.parent.mkdir(exist_ok=True, parents=True)
+        logger.info(f"Creating zip archive for {folder.path} in {zip_path}")
+        # Removing suffix here to stop make_archive from adding another '.zip'
+        shutil.make_archive(zip_path.with_suffix(""), "zip", folder.path)
+        logger.debug("done")

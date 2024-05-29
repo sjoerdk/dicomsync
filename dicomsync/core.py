@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Iterable, List
+from typing import Iterable
 
 from slugify import slugify
 
@@ -29,6 +29,9 @@ class Subject:
     def __init__(self, name):
         self.name = name
 
+    def __str__(self):
+        return f"Subject '{self.name}'"
+
 
 class ImagingStudy:
     """The images resulting from a single patient visit.
@@ -36,8 +39,9 @@ class ImagingStudy:
     This could be a CT scan, an X-ray, and MRI scan.
     """
 
-    def __init__(self, subject: Subject):
+    def __init__(self, subject: Subject, description: str):
         self.subject = subject
+        self.description = description
 
     def key(self) -> str:
         """Unique identifier. This is used to check whether an imaging study exists
@@ -61,12 +65,3 @@ class Place:
 
     def all_studies(self) -> Iterable[ImagingStudy]:
         raise NotImplementedError()
-
-
-class SubImage(ImagingStudy):
-    pass
-
-
-class SubPlace(Place):
-    def all_studies(self) -> List[SubImage]:
-        pass
