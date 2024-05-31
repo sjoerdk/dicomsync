@@ -8,6 +8,7 @@ license = "apache"
 [tool.poetry.dependencies]
 python = "^3.9"
 python-slugify = "^8.0.4"
+xnat = "^0.6.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^8.1.0"

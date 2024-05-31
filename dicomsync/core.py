@@ -24,13 +24,16 @@ def make_slug(string_in: str) -> str:
 
 @dataclass
 class Subject:
-    """A person of whom images can be taken"""
+    """A person of whom images can be taken. Name is a unique identifier"""
 
     def __init__(self, name):
         self.name = name
 
     def __str__(self):
         return f"Subject '{self.name}'"
+
+    def __eq__(self, other):
+        return self.name == other.name
 
 
 class ImagingStudy:
