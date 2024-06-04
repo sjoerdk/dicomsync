@@ -36,10 +36,12 @@ def an_empty_zipfile_root_dir(tmpdir):
     return ZippedDICOMRootFolder(Path(tmpdir) / "a_zipfile_root")
 
 
-def test_dicom_root_folder(an_empty_dicom_root_folder):
+def test_dicom_root_folder(an_empty_dicom_root_folder, tmpdir):
     """Send some studies to a root folder"""
     a_study = DICOMStudyFolderFactory(
-        subject=Subject("test1"), description="some_thing_34"
+        subject=Subject("test1"),
+        description="some_thing_34",
+        path=Path(tmpdir) / "dicom_root_folder",
     )
     add_dummy_files(a_study)
     assert not an_empty_dicom_root_folder.contains(a_study)

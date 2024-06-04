@@ -26,14 +26,23 @@ temp_location = DICOMRootFolder(Path("/tmp/dicomroot"))
 
 
 # then upload zip to archive
-# xnat_archive = XNATProjectPreArchive()
 session_factory = XNATSessionFactory(
     server="https://xnat.bmia.nl/", user="skerkstra", password=os.environ["XNAT_PASS"]
 )
 
 with session_factory.get_session() as connection:
-    project = XNATProjectPreArchive(session=connection, project_name="mrcleandist")
-    studies = project.all_studies()
+    project = XNATProjectPreArchive(connection=connection, project_name="mrcleandist")
+    # studies = project.all_studies()
+    # project.send_zipped_study(temp_location.all_studies()[0])
+    """MR = connection.classes.MrSessionData
+    result = MR.query(MR.project == 'mrcleandist').view(
+        MR.label, MR.subject_id, MR.project,
+        connection.classes.SubjectData.label).tabulate_dict()
 
-for study in studies:
-    print(f"{study} - {study.date_uploaded}")
+    CT = connection.classes.CtSessionData
+    result2 = CT.query(CT.project == 'mrcleandist').view(
+        CT.label, CT.subject_id, CT.project,
+        connection.classes.SubjectData.label).tabulate_dict()
+    """
+    studies = project.imported_studies()
+    test = 1

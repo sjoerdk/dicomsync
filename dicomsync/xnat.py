@@ -1,11 +1,15 @@
 """Handles imaging studies in XNAT servers"""
 from contextlib import contextmanager
-from datetime import datetime
 from typing import List
 
 import xnat
 
 from dicomsync.core import ImagingStudy, Place, Subject
+from dicomsync.exceptions import StudyAlreadyExistsError
+from dicomsync.local import ZippedDICOMStudy
+from dicomsync.logs import get_module_logger
+
+logger = get_module_logger("xnat")
 
 
 class XNATUploadedStudy(ImagingStudy):
@@ -33,9 +37,8 @@ class XNATUploadedStudy(ImagingStudy):
     This confusion is part of the reason for creating this library
     """
 
-    def __init__(self, subject: Subject, description: str, date_uploaded: datetime):
+    def __init__(self, subject: Subject, description: str):
         super().__init__(subject, description)
-        self.date_uploaded = date_uploaded
 
     def key(self) -> str:
         """Unique identifier. This is used to check whether an imaging study exists
@@ -54,14 +57,14 @@ class XNATUploadedStudy(ImagingStudy):
 
 
 class XNATSessionFactory:
-    """Contains everything to create an xnat session.
+    """Contains everything to create an xnat connection.
 
     Use as context manager:
 
-    with XNATSessionFactory.get_session() as session:
-        session.do_a_thing()
+    with XNATSessionFactory.get_session() as connection:
+        connection.do_a_thing()
 
-    Created this to avoid session timeouts when performing xnat operations in scripts
+    Created this to avoid connection timeouts when performing xnat operations in scripts
     that run several hours/days. I want to set credentials once and then forget about
     them.
     """
@@ -93,15 +96,15 @@ class XNATProjectPreArchive(Place):
     with xnat projects, use xnat lib.
     """
 
-    def __init__(self, session, project_name: str):
+    def __init__(self, connection, project_name: str):
         """
 
         Parameters
         ----------
-        session: XNAT session object
+        connection: XNAT connection object
         project_name: str
         """
-        self.session = session
+        self.connection = connection
         self.project_name = project_name
 
     def contains(self, study: ImagingStudy) -> bool:
@@ -115,7 +118,7 @@ class XNATProjectPreArchive(Place):
         """
         subjects = {}
         studies = []
-        for upload_session in self.session.prearchive.sessions(
+        for upload_session in self.connection.prearchive.sessions(
             project=self.project_name
         ):
             subject_name = upload_session.subject
@@ -125,9 +128,54 @@ class XNATProjectPreArchive(Place):
                 subjects[subject_name] = Subject(name=subject_name)
             studies.append(
                 XNATUploadedStudy(
-                    subject=subjects[subject_name],
-                    description=description,
-                    date_uploaded=upload_session.uploaded,
+                    subject=subjects[subject_name], description=description
                 )
             )
         return studies
+
+    def imported_studies(self) -> List[XNATUploadedStudy]:
+        """All studies that have been imported from pre-archive into the project
+        itself. You cannot directly import studies here - studies need to be uploaded
+        to pre-archive first and then imported from there, usually by a project admin
+
+        Notes
+        -----
+        The XNAT interface does not allow querying for `all studies`. Instead, you have
+        to query a `SessionData` class for each image type individually. This is one
+        Http get call per query, so it pays to minimize this. Bit weird. Probably discuss
+        with xnatpy/xnat devs whether the query 'give me all study information for
+        project X' cannot be done in a single query.
+
+        """
+        imported_studies = []
+        session_data_classes = [
+            self.connection.classes.MrSessionData,
+            self.connection.classes.CtSessionData,
+        ]
+
+        for session_data in session_data_classes:
+            logger.debug(f"Querying impored studies of type {session_data}")
+            for item in (
+                session_data.query(session_data.project == self.project_name)
+                .view(
+                    session_data.label,
+                    session_data.subject_id,
+                    session_data.project,
+                    self.connection.classes.SubjectData.label,
+                )
+                .tabulate_dict()
+            ):
+                imported_studies.append(
+                    XNATUploadedStudy(
+                        subject=item["xnat_subjectdata_xnat_col_subjectdatalabel"],
+                        description=item["xnat_col_mrsessiondatalabel"],
+                    )
+                )
+
+        return imported_studies
+
+    def send_zipped_study(self, zipped_study: ZippedDICOMStudy):
+        if self.contains(zipped_study):
+            raise StudyAlreadyExistsError(f"Study {zipped_study} is already in {self}")
+
+        # TODO: Upload this thing and log
