@@ -1,6 +1,8 @@
 from dataclasses import dataclass
+from enum import Enum
 from typing import Iterable
 
+from pydantic import BaseModel
 from slugify import slugify
 
 
@@ -30,7 +32,7 @@ class Subject:
         self.name = name
 
     def __str__(self):
-        return f"Subject '{self.name}'"
+        return f"'{self.name}'"
 
     def __eq__(self, other):
         return self.name == other.name
@@ -68,3 +70,20 @@ class Place:
 
     def all_studies(self) -> Iterable[ImagingStudy]:
         raise NotImplementedError()
+
+
+class AssertionStatus(str, Enum):
+    not_set = "not_set"
+    updated = "updated"
+    created = "created"
+    skipped = "skipped"
+    error = "error"
+
+
+class AssertionResult(BaseModel):
+    """When asserting whether study is in a certain state, indicates which actions
+    were taken
+    """
+
+    status: AssertionStatus = AssertionStatus.not_set
+    message: str = ""

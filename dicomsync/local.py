@@ -4,7 +4,15 @@ from pathlib import Path
 from shutil import copyfile
 from typing import List, Union
 
-from dicomsync.core import ImagingStudy, Place, Subject, make_slug
+from dicomsync.core import (
+    AssertionResult,
+    AssertionStatus,
+    ImagingStudy,
+    Place,
+    Subject,
+    make_slug,
+)
+from dicomsync.exceptions import DICOMSyncError, StudyAlreadyExistsError
 from dicomsync.logs import get_module_logger
 
 logger = get_module_logger("local")
@@ -27,7 +35,7 @@ class DICOMStudyFolder(ImagingStudy):
         return [x for x in self.path.glob("*") if x.is_file()]
 
     def __str__(self):
-        return f"DICOMStudyFolder {self.subject.name} - {self.description}: {self.path}"
+        return f"{self.subject.name} - {self.description}: {self.path}"
 
 
 class DICOMRootFolder(Place):
@@ -74,7 +82,7 @@ class DICOMRootFolder(Place):
 
         logger.debug(f"Sending {folder} to {self}")
         if not folder.path.exists():
-            raise ValueError(
+            raise DICOMSyncError(
                 f"{folder.path} does not exist. Cannot find data for" f" {folder}"
             )
 
@@ -82,7 +90,7 @@ class DICOMRootFolder(Place):
 
         if study_path.exists():
             if list(study_path.glob("*")):
-                raise ValueError(f"{study_path} already exists and is not empty")
+                raise StudyAlreadyExistsError(f"{study_path} exists and is not empty")
 
         study_path.mkdir(exist_ok=True, parents=True)
         count = 0
@@ -107,7 +115,7 @@ class ZippedDICOMStudy(ImagingStudy):
         return make_slug(f"{self.subject.name}_{self.description}")
 
     def __str__(self):
-        return f"ZippedDICOMStudy {self.subject.name} - {self.description}: {self.path}"
+        return f"{self.subject.name} - {self.description}: {self.path}"
 
 
 class ZippedDICOMRootFolder(Place):
@@ -154,17 +162,28 @@ class ZippedDICOMRootFolder(Place):
 
         logger.debug(f"Zipping {folder} to {self}")
         if not folder.path.exists():
-            raise ValueError(
+            raise DICOMSyncError(
                 f"{folder.path} does not exist. Cannot find data for" f" {folder}"
             )
 
         zip_path = self.path / folder.subject.name / f"{folder.description}.zip"
 
         if zip_path.exists():
-            raise ValueError(f"{zip_path} already exists. I'm not overwriting this")
+            raise StudyAlreadyExistsError(
+                f"{zip_path} " f"exists. I'm not overwriting this"
+            )
 
         zip_path.parent.mkdir(exist_ok=True, parents=True)
         logger.info(f"Creating zip archive for {folder.path} in {zip_path}")
         # Removing suffix here to stop make_archive from adding another '.zip'
         shutil.make_archive(zip_path.with_suffix(""), "zip", folder.path)
         logger.debug("done")
+
+    def assert_has_zip(self, folder: DICOMStudyFolder) -> AssertionResult:
+        """Make sure the given dicom study folder has a corresponding zip file"""
+        try:
+            self.send_dicom_folder(folder)
+            return AssertionResult(status=AssertionStatus.created)
+        except StudyAlreadyExistsError:
+            logger.debug(f"{folder} already existed. Skipping")
+            return AssertionResult(status=AssertionStatus.skipped)
