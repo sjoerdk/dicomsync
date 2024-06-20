@@ -3,9 +3,16 @@ from contextlib import contextmanager
 from typing import List
 
 import xnat
+from xnat.exceptions import XNATUploadError
 
-from dicomsync.core import ImagingStudy, Place, Subject
-from dicomsync.exceptions import StudyAlreadyExistsError
+from dicomsync.core import (
+    AssertionResult,
+    AssertionStatus,
+    ImagingStudy,
+    Place,
+    Subject,
+)
+from dicomsync.exceptions import DICOMSyncError, StudyAlreadyExistsError
 from dicomsync.local import ZippedDICOMStudy
 from dicomsync.logs import get_module_logger
 
@@ -56,12 +63,12 @@ class XNATUploadedStudy(ImagingStudy):
         return self.key()
 
 
-class XNATSessionFactory:
+class XNATConnectionFactory:
     """Contains everything to create an xnat connection.
 
     Use as context manager:
 
-    with XNATSessionFactory.get_session() as connection:
+    with XNATConnectionFactory.get_connection() as connection:
         connection.do_a_thing()
 
     Created this to avoid connection timeouts when performing xnat operations in scripts
@@ -75,14 +82,14 @@ class XNATSessionFactory:
         self.password = password
 
     @contextmanager
-    def get_session(self):
+    def get_connection(self):
         with xnat.connect(
             server=self.server,
             user=self.user,
             password=self.password,
             no_parse_model=False,
-        ) as session:
-            yield session
+        ) as connection:
+            yield connection
 
 
 class XNATProjectPreArchive(Place):
@@ -106,6 +113,9 @@ class XNATProjectPreArchive(Place):
         """
         self.connection = connection
         self.project_name = project_name
+
+    def __str__(self):
+        return f"XNATProjectPreArchive '{self.project_name}'"
 
     def contains(self, study: ImagingStudy) -> bool:
         """Return true if this place contains this ImagingStudy"""
@@ -140,42 +150,68 @@ class XNATProjectPreArchive(Place):
 
         Notes
         -----
-        The XNAT interface does not allow querying for `all studies`. Instead, you have
-        to query a `SessionData` class for each image type individually. This is one
-        Http get call per query, so it pays to minimize this. Bit weird. Probably discuss
-        with xnatpy/xnat devs whether the query 'give me all study information for
-        project X' cannot be done in a single query.
-
+        I believe that the relation between upload parameters and experiment naming
+        in XNAT is arbitrary and might be different for every project or even based
+        on human input. Therefore, this method can probably not be relied on.
+        Including it here anyway to potentially catch _some_ duplicate uploads
         """
-        imported_studies = []
-        session_data_classes = [
-            self.connection.classes.MrSessionData,
-            self.connection.classes.CtSessionData,
-        ]
 
-        for session_data in session_data_classes:
-            logger.debug(f"Querying impored studies of type {session_data}")
-            for item in (
-                session_data.query(session_data.project == self.project_name)
-                .view(
-                    session_data.label,
-                    session_data.subject_id,
-                    session_data.project,
-                    self.connection.classes.SubjectData.label,
+        imported_studies = []
+
+        project = self.connection.projects[self.project_name]
+        subjects = {x.ID: x for x in project.subjects.tabulate()}
+        for item in project.experiments.tabulate(
+            columns=("ID", "label", "insert_date", "subject_ID")
+        ):
+
+            subject = subjects.get(item.subject_ID)
+            if not subject:
+                raise DICOMSyncError(
+                    f"Experiment referenced an unknown patient. "
+                    f"What's going on? Experiment was '{item}'"
                 )
-                .tabulate_dict()
-            ):
-                imported_studies.append(
-                    XNATUploadedStudy(
-                        subject=item["xnat_subjectdata_xnat_col_subjectdatalabel"],
-                        description=item["xnat_col_mrsessiondatalabel"],
-                    )
+
+            imported_studies.append(
+                XNATUploadedStudy(
+                    subject=Subject(name=subject.label), description=item.label
                 )
+            )
 
         return imported_studies
 
     def send_zipped_study(self, zipped_study: ZippedDICOMStudy):
+        logger.info(f"Uploading to {self}: {zipped_study}")
         if self.contains(zipped_study):
             raise StudyAlreadyExistsError(f"Study {zipped_study} is already in {self}")
 
-        # TODO: Upload this thing and log
+        logger.info(f"Uploading {zipped_study}")
+        try:
+            self.connection.services.import_(
+                str(zipped_study.path),
+                project=self.project_name,
+                subject=zipped_study.subject.name,
+                experiment=zipped_study.description,
+                destination="/prearchive",
+            )
+        except XNATUploadError as e:
+            raise DICOMSyncError(f"Upload failed for '{zipped_study}'") from e
+        logger.debug(f"Uploading finished: {zipped_study}")
+
+    def assert_has_study(self, zipped_study: ZippedDICOMStudy) -> AssertionResult:
+        """Make sure the zipped study is in XNAT. If not, upload"""
+
+        previous_studies = self.imported_studies() + self.all_studies()
+
+        if zipped_study.key() in [x.key() for x in previous_studies]:
+            logger.info(f"Skipping Study {zipped_study} as it is already in {self}")
+            return AssertionResult(status=AssertionStatus.skipped)
+        else:
+            try:
+                self.send_zipped_study(zipped_study)
+                return AssertionResult(
+                    status=AssertionStatus.created,
+                    message=f"created {zipped_study.key()}",
+                )
+            except DICOMSyncError as e:
+                logger.warning(f"Skipping due to Error uploading '{zipped_study}': {e}")
+                return AssertionResult(status=AssertionStatus.error, message=str(e))

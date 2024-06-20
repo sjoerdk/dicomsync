@@ -1,48 +1,47 @@
 """Take local study folders, zip and upload to xnat"""
+
 import logging
 import os
+
+from dicomsync.local import DICOMRootFolder, ZippedDICOMRootFolder
 from pathlib import Path
 
-from dicomsync.core import Subject
-from dicomsync.local import DICOMRootFolder, DICOMStudyFolder
-from dicomsync.xnat import XNATProjectPreArchive, XNATSessionFactory
+from dicomsync.ui import summarize_results
+from dicomsync.xnat import XNATConnectionFactory, XNATProjectPreArchive
+
+# ================= logging ====================================================
 
 logging.basicConfig(level=logging.DEBUG)
+logging.getLogger("PIL").level = logging.WARNING
+logging.getLogger("urllib3").level = logging.DEBUG
+logger = logging.getLogger()
 
-# Describe local files
-subject1 = Subject(name="subject1")
+# ================= define objects we will be working with =======================
 
-local_study = DICOMStudyFolder(
-    subject=subject1,
-    description="a_study",
-    path="/home/sjoerd/ticketdata/G00196/testdata/dicomroot/patient1/study1",
+# the dicom studies dir in patient/study format
+dicom_root_folder = DICOMRootFolder(Path("/tmp/dicomroot"))
+
+# a location for zip files. Local
+zip_folder = ZippedDICOMRootFolder(Path("/tmp/zipfiles"))
+
+session_factory = XNATConnectionFactory(
+    server="https://xnathost", user="user", password=os.environ["XNAT_PASS"]
 )
 
+# ================= Ensure things are like they should be ========================
 
-temp_location = DICOMRootFolder(Path("/tmp/dicomroot"))
-# temp_location.send_dicom_folder(local_study)
+# Work with these studies:
+studies = dicom_root_folder.all_studies()
+logger.info(f"Found {len(studies)} studies")
 
-# create zip from this
+# These should be zipped
+logger.info("Checking zip dir")
+results = [zip_folder.assert_has_zip(study) for study in studies]
+logger.info(summarize_results(results))
 
-
-# then upload zip to archive
-session_factory = XNATSessionFactory(
-    server="https://xnat.bmia.nl/", user="skerkstra", password=os.environ["XNAT_PASS"]
-)
-
-with session_factory.get_session() as connection:
-    project = XNATProjectPreArchive(connection=connection, project_name="mrcleandist")
-    # studies = project.all_studies()
-    # project.send_zipped_study(temp_location.all_studies()[0])
-    """MR = connection.classes.MrSessionData
-    result = MR.query(MR.project == 'mrcleandist').view(
-        MR.label, MR.subject_id, MR.project,
-        connection.classes.SubjectData.label).tabulate_dict()
-
-    CT = connection.classes.CtSessionData
-    result2 = CT.query(CT.project == 'mrcleandist').view(
-        CT.label, CT.subject_id, CT.project,
-        connection.classes.SubjectData.label).tabulate_dict()
-    """
-    studies = project.imported_studies()
-    test = 1
+# send to xnat
+with session_factory.get_connection() as connection:
+    project = XNATProjectPreArchive(connection=connection, project_name="myproject")
+    logger.info(f"Sending to {project}")
+    results = [project.assert_has_study(study) for study in zip_folder.all_studies()]
+    logger.info(summarize_results(results))

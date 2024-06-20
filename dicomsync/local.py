@@ -115,7 +115,7 @@ class ZippedDICOMStudy(ImagingStudy):
         return make_slug(f"{self.subject.name}_{self.description}")
 
     def __str__(self):
-        return f"{self.subject.name} - {self.description}: {self.path}"
+        return f"ZippedDICOMStudy {self.subject.name} - {self.description}: {self.path}"
 
 
 class ZippedDICOMRootFolder(Place):
@@ -160,7 +160,6 @@ class ZippedDICOMRootFolder(Place):
     def send_dicom_folder(self, folder: DICOMStudyFolder):
         """Zip this DICOMStudyFolder and save here"""
 
-        logger.debug(f"Zipping {folder} to {self}")
         if not folder.path.exists():
             raise DICOMSyncError(
                 f"{folder.path} does not exist. Cannot find data for" f" {folder}"
@@ -172,6 +171,7 @@ class ZippedDICOMRootFolder(Place):
             raise StudyAlreadyExistsError(
                 f"{zip_path} " f"exists. I'm not overwriting this"
             )
+        logger.debug(f"Zipping {folder} to {self}")
 
         zip_path.parent.mkdir(exist_ok=True, parents=True)
         logger.info(f"Creating zip archive for {folder.path} in {zip_path}")
@@ -185,5 +185,5 @@ class ZippedDICOMRootFolder(Place):
             self.send_dicom_folder(folder)
             return AssertionResult(status=AssertionStatus.created)
         except StudyAlreadyExistsError:
-            logger.debug(f"{folder} already existed. Skipping")
+            logger.debug(f"Zip already existed. Skipping '{folder}'")
             return AssertionResult(status=AssertionStatus.skipped)
