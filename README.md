@@ -3,7 +3,6 @@
 [![CI](https://github.com/sjoerdk/dicomsync/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/sjoerdk/dicomsync/actions/workflows/build.yml?query=branch%3Amaster)
 [![PyPI](https://img.shields.io/pypi/v/dicomsync)](https://pypi.org/project/dicomsync/)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/dicomsync)](https://pypi.org/project/dicomsync/)
-[![Code Climate](https://codeclimate.com/github/sjoerdk/dicomsync/badges/gpa.svg)](https://codeclimate.com/github/sjoerdk/dicomsync)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Checked with mypy](http://www.mypy-lang.org/static/mypy_badge.svg)](http://mypy-lang.org/)
 
@@ -18,6 +17,10 @@ Synchronize medical imaging studies between storage modalities
 ```
 pip install dicomsync
 ```
+
+## Usage
+
+See /examples folder
 
 ## Development
 To set up for development of dicomsync:
