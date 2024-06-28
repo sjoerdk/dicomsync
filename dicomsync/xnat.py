@@ -57,7 +57,7 @@ class XNATUploadedStudy(ImagingStudy):
             Unique identifier for this study.
 
         """
-        return f"{self.subject.name}_{self.description}"
+        return f"{self.subject.name}_{self.description}".lower()
 
     def __str__(self):
         return self.key()

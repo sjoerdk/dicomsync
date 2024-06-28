@@ -52,6 +52,10 @@ class ImagingStudy:
         """Unique identifier. This is used to check whether an imaging study exists
         in a place.
 
+        Notes
+        -----
+        Lower case keys are expected but not enforced.
+
         Returns
         -------
         str
