@@ -15,17 +15,6 @@ def some_dicom_folders():
 
 
 @fixture()
-def a_dicom_study_folder(tmpdir):
-    study_folder = DICOMStudyFolder(
-        subject=Subject(name="subject1"),
-        description="study_1",
-        path=Path(tmpdir) / "subject1" / "study_1",
-    )
-    add_dummy_files(study_folder)
-    return study_folder
-
-
-@fixture()
 def an_empty_dicom_root_folder(tmpdir):
     """A dicom root folder with dummy data on disk"""
     return DICOMRootFolder(Path(tmpdir) / "a_dicom_root")

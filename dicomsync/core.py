@@ -65,7 +65,7 @@ class ImagingStudy:
         raise NotImplementedError()
 
 
-class Place:
+class Place(BaseModel):
     """Can contain imaging studies"""
 
     def contains(self, study: ImagingStudy) -> bool:

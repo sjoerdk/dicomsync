@@ -10,11 +10,15 @@ python = "^3.9"
 python-slugify = "^8.0.4"
 xnat = "^0.6.2"
 pydantic = "^2.7.3"
+coloredlogs = "^15.0.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^8.1.0"
 factory-boy = "^3.3.0"
 pre-commit = "^3.6.2"
+
+[tool.poetry.scripts]
+dicomsync = "dicomsync.cli.entrypoint:main"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

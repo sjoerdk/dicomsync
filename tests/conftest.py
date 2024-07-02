@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pytest
 
+from dicomsync.core import Subject
 from dicomsync.local import DICOMStudyFolder
 
 
@@ -29,3 +30,14 @@ def a_folder_with_files(tmpdir):
     )
     create_dummy_files(a_dicom_folder)
     return a_dicom_folder
+
+
+@pytest.fixture()
+def a_dicom_study_folder(tmpdir) -> DICOMStudyFolder:
+    study_folder = DICOMStudyFolder(
+        subject=Subject(name="subject1"),
+        description="study_1",
+        path=Path(tmpdir) / "subject1" / "study_1",
+    )
+    add_dummy_files(study_folder)
+    return study_folder

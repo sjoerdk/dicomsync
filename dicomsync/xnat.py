@@ -1,6 +1,6 @@
 """Handles imaging studies in XNAT servers"""
 from contextlib import contextmanager
-from typing import List
+from typing import Any, List
 
 import xnat
 from xnat.exceptions import XNATUploadError
@@ -103,16 +103,10 @@ class XNATProjectPreArchive(Place):
     with xnat projects, use xnat lib.
     """
 
-    def __init__(self, connection, project_name: str):
-        """
+    class_name: str = "XNATProjectPreArchive"  # needed for serialization
 
-        Parameters
-        ----------
-        connection: XNAT connection object
-        project_name: str
-        """
-        self.connection = connection
-        self.project_name = project_name
+    connection: Any  # xnat connection object
+    project_name: str
 
     def __str__(self):
         return f"XNATProjectPreArchive '{self.project_name}'"

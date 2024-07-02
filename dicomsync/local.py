@@ -53,8 +53,8 @@ class DICOMRootFolder(Place):
         etc..
     """
 
-    def __init__(self, path: Path):
-        self.path = Path(path)
+    class_name: str = "DICOMRootFolder"  # needed for serialization
+    path: Path
 
     def __str__(self):
         return f"Root folder at '{self.path}'"
@@ -133,8 +133,8 @@ class ZippedDICOMRootFolder(Place):
         etc..
     """
 
-    def __init__(self, path: Path):
-        self.path = Path(path)
+    class_name: str = "ZippedDICOMRootFolder"  # needed for serialization
+    path: Path
 
     def __str__(self):
         return f"Root folder at '{self.path}'"
