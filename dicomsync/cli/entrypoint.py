@@ -2,6 +2,11 @@
 import click
 
 from dicomsync.cli.base import configure_logging, get_context
+from dicomsync.cli.place import place
+from dicomsync.exceptions import DICOMSyncError, NoSettingsFoundError
+from dicomsync.logs import get_module_logger
+
+logger = get_module_logger("entrypoint")
 
 
 @click.group()
@@ -13,4 +18,14 @@ def main(ctx, verbose):
     Use the commands below with -h for more info
     """
     configure_logging(verbose)
-    ctx.obj = get_context()
+    try:
+        ctx.obj = get_context()
+    except NoSettingsFoundError as e:
+        logger.debug(str(e))
+    except DICOMSyncError as e:
+        logger.exception(e)
+    except Exception as e:
+        logger.exception(e)
+
+
+main.add_command(place)

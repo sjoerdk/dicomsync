@@ -17,12 +17,12 @@ def some_dicom_folders():
 @fixture()
 def an_empty_dicom_root_folder(tmpdir):
     """A dicom root folder with dummy data on disk"""
-    return DICOMRootFolder(Path(tmpdir) / "a_dicom_root")
+    return DICOMRootFolder(path=Path(tmpdir) / "a_dicom_root")
 
 
 @fixture
 def an_empty_zipfile_root_dir(tmpdir):
-    return ZippedDICOMRootFolder(Path(tmpdir) / "a_zipfile_root")
+    return ZippedDICOMRootFolder(path=Path(tmpdir) / "a_zipfile_root")
 
 
 def test_dicom_root_folder(an_empty_dicom_root_folder, tmpdir):

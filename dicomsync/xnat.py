@@ -1,6 +1,7 @@
 """Handles imaging studies in XNAT servers"""
 from contextlib import contextmanager
-from typing import Any, List
+from os import environ
+from typing import Any, List, Optional
 
 import xnat
 from xnat.exceptions import XNATUploadError
@@ -101,6 +102,8 @@ class XNATProjectPreArchive(Place):
     XNAT project itself is not modelled in dicomsync, as we are only
     interested in uploading studies at the moment. For more functionality interacting
     with xnat projects, use xnat lib.
+
+    You cannot persist a c
     """
 
     class_name: str = "XNATProjectPreArchive"  # needed for serialization
@@ -209,3 +212,41 @@ class XNATProjectPreArchive(Place):
             except DICOMSyncError as e:
                 logger.warning(f"Skipping due to Error uploading '{zipped_study}': {e}")
                 return AssertionResult(status=AssertionStatus.error, message=str(e))
+
+
+class SerializableXNATProjectPreArchive(Place):
+    """An XNATProjectPreArchive that does not require a logged-in session
+
+    Uses XNATProjectPreArchive internally. Useful for quick loading and saving.
+    """
+
+    class_name: str = "SerializableXNATProjectPreArchive"  # needed for serialization
+
+    server: str
+    user: str
+    project: str
+
+    _pre_archive: Optional[XNATProjectPreArchive] = None
+
+    def get_pre_archive(self) -> XNATProjectPreArchive:
+        if not self._pre_archive:
+            self._pre_archive = XNATProjectPreArchive(
+                connection=xnat.connect(
+                    server=self.server,
+                    user=self.user,
+                    password=environ["XNAT_PASS"],
+                    no_parse_model=False,
+                ),
+                project=self.project,
+            )
+        return self._pre_archive
+
+    def contains(self, study: ImagingStudy) -> bool:
+        """Return true if this place contains this ImagingStudy"""
+        return self.get_pre_archive().contains(study)
+
+    def all_studies(self) -> List[XNATUploadedStudy]:
+        """Info on studies from XNAT server which are still in pre-archive, awaiting
+        import
+        """
+        return self.get_pre_archive().all_studies()

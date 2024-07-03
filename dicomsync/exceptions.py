@@ -4,3 +4,7 @@ class DICOMSyncError(Exception):
 
 class StudyAlreadyExistsError(DICOMSyncError):
     pass
+
+
+class NoSettingsFoundError(DICOMSyncError):
+    pass

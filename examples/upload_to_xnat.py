@@ -19,10 +19,10 @@ logger = logging.getLogger()
 # ================= define objects we will be working with =======================
 
 # the dicom studies dir in patient/study format
-dicom_root_folder = DICOMRootFolder(Path("/tmp/dicomroot"))
+dicom_root_folder = DICOMRootFolder(path=Path("/tmp/dicomroot"))
 
 # a location for zip files. Local
-zip_folder = ZippedDICOMRootFolder(Path("/tmp/zipfiles"))
+zip_folder = ZippedDICOMRootFolder(path=Path("/tmp/zipfiles"))
 
 session_factory = XNATConnectionFactory(
     server="https://xnathost", user="user", password=os.environ["XNAT_PASS"]
