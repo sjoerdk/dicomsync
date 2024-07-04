@@ -1,7 +1,7 @@
 """Handles imaging studies in XNAT servers"""
 from contextlib import contextmanager
 from os import environ
-from typing import Any, List, Optional
+from typing import Any, List, Literal, Optional
 
 import xnat
 from xnat.exceptions import XNATUploadError
@@ -220,7 +220,10 @@ class SerializableXNATProjectPreArchive(Place):
     Uses XNATProjectPreArchive internally. Useful for quick loading and saving.
     """
 
-    class_name: str = "SerializableXNATProjectPreArchive"  # needed for serialization
+    # needed for pydantic serialization
+    type_: Literal[
+        "SerializableXNATProjectPreArchive"
+    ] = "SerializableXNATProjectPreArchive"
 
     server: str
     user: str

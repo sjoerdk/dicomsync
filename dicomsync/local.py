@@ -2,7 +2,7 @@
 import shutil
 from pathlib import Path
 from shutil import copyfile
-from typing import List, Union
+from typing import List, Literal, Union
 
 from dicomsync.core import (
     AssertionResult,
@@ -53,7 +53,7 @@ class DICOMRootFolder(Place):
         etc..
     """
 
-    class_name: str = "DICOMRootFolder"  # needed for serialization
+    type_: Literal["DICOMRootFolder"] = "DICOMRootFolder"  # needed for serialization
     path: Path
 
     def __str__(self):
@@ -133,11 +133,16 @@ class ZippedDICOMRootFolder(Place):
         etc..
     """
 
-    class_name: str = "ZippedDICOMRootFolder"  # needed for serialization
+    type_: Literal["ZippedDICOMRootFolder"] = "ZippedDICOMRootFolder"
+
     path: Path
 
+    @classmethod
+    def parse_obj(cls, obj):
+        return cls._convert_to_real_type_(obj)
+
     def __str__(self):
-        return f"Root folder at '{self.path}'"
+        return f"Zipped DICOM Root folder at '{self.path}'"
 
     def contains(self, study: ImagingStudy) -> bool:
         """Return true if this place contains this ImagingStudy"""

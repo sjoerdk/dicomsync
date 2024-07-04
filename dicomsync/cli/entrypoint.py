@@ -1,9 +1,8 @@
 """Entrypoint for dicomsync CLI command. All subcommands are connected here."""
 import click
 
-from dicomsync.cli.base import configure_logging, get_context
+from dicomsync.cli.base import DicomSyncContext, configure_logging, get_context
 from dicomsync.cli.place import place
-from dicomsync.exceptions import DICOMSyncError, NoSettingsFoundError
 from dicomsync.logs import get_module_logger
 
 logger = get_module_logger("entrypoint")
@@ -18,14 +17,22 @@ def main(ctx, verbose):
     Use the commands below with -h for more info
     """
     configure_logging(verbose)
-    try:
-        ctx.obj = get_context()
-    except NoSettingsFoundError as e:
-        logger.debug(str(e))
-    except DICOMSyncError as e:
-        logger.exception(e)
-    except Exception as e:
-        logger.exception(e)
+    ctx.obj = get_context()
 
 
+@click.command(short_help="Show settings in current dir")
+@click.pass_obj
+def status(context: DicomSyncContext):
+    """Show all places"""
+    settings = context.load_settings()
+    if hasattr(settings, "path"):
+        click.echo(f"Reading settings from '{settings.path}'")
+    else:
+        click.echo("Reading settings from memory")
+
+    place_keys = list(settings.places.keys())
+    click.echo(f"{len(place_keys)} places defined in settings: {place_keys}")
+
+
+main.add_command(status)
 main.add_command(place)

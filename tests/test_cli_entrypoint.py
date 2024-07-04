@@ -4,6 +4,7 @@ from pathlib import Path
 
 from click.testing import CliRunner
 
+from dicomsync.cli import base
 from dicomsync.cli.base import DicomSyncContext
 from dicomsync.cli.entrypoint import main
 from dicomsync.persistence import (
@@ -14,22 +15,32 @@ from dicomsync.persistence import (
 from tests.conftest import MockContextCliRunner
 
 
+def mock_settings(monkeypatch):
+    """Settings loaded by CLI will be empty default settings.
+
+    You can change settings by settings mock_settings.settings
+
+    Returns
+    -------
+    MockSettings
+
+    """
+
+    class MockSettings:
+        def __init__(self, settings):
+            self.settings = settings
+            monkeypatch.setattr(base, "load_settings", lambda x: self.settings)
+
+    return MockSettings(DicomSyncSettings(places={}))
+
+
 def test_save_load_to_local_dir(tmpdir):
     """Test running if there are no settings"""
     # current dir does not contain any settings file
-    runner = MockContextCliRunner(
-        mock_context=DicomSyncContext(
-            settings=DicomSyncSettings(places={}), current_dir=tmpdir
-        )
-    )
+    runner = MockContextCliRunner(mock_context=DicomSyncContext(current_dir=tmpdir))
 
-    response = runner.invoke(
-        main, args=["-v", "place"]
-    )  # -v to ensure debug message gets printed.
-    # 'place' arg to trigger settings read
-
-    # No settings file should show warning message but not exit
-    assert "No settings" in response.stdout
+    response = runner.invoke(main, args=["-v", "place"])
+    # no error should have been raised as no settings are needed here
     assert response.exit_code == 0
 
 

@@ -21,6 +21,10 @@ SerializablePlace = (Union)[
 class DicomSyncSettings(BaseModel):
     places: Dict[str, SerializablePlace]
 
+    def save(self):
+        """Dummy save to be able to call save on any settings cli"""
+        logger.debug("Save() called on non-file settings. Ignoring")
+
 
 class DicomSyncSettingsFromFile(DicomSyncSettings):
     """Loaded from a path and can be saved to that same path"""
@@ -42,10 +46,10 @@ class DicomSyncSettingsFromFile(DicomSyncSettings):
         except FileNotFoundError as e:
             raise NoSettingsFoundError(f"No settings file found at '{file}'") from e
 
-    @classmethod
-    def init_from_default_file(cls, folder: Path):
-        """Load settings from default file name in folder"""
-        return cls.init_from_file(folder / DEFAULT_SETTINGS_FILE_NAME)
+    @staticmethod
+    def get_default_file(folder: Path):
+        """Get default full path to file given a folder"""
+        return folder / DEFAULT_SETTINGS_FILE_NAME
 
     def save(self):
         with open(self.path, "w") as f:
