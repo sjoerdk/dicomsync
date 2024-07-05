@@ -5,6 +5,7 @@ import pytest
 from _pytest.fixtures import fixture
 from click.testing import CliRunner
 
+from dicomsync.cli import base
 from dicomsync.cli.base import DicomSyncContext
 from dicomsync.core import Subject
 from dicomsync.local import DICOMRootFolder, DICOMStudyFolder, ZippedDICOMRootFolder
@@ -106,3 +107,29 @@ def a_dicom_zipped_folder(tmpdir):
     with open(a_patient / "study1.zip", "w") as f:
         f.write("")
     return ZippedDICOMRootFolder(path=folder)
+
+
+@fixture
+def mock_settings(monkeypatch):
+    """Settings loaded by CLI will be empty default settings.
+
+    You can change settings by settings mock_settings.settings
+
+    Returns
+    -------
+    MockSettings
+
+    """
+
+    class MockSettings:
+        def __init__(self, settings):
+            self.settings = settings
+            monkeypatch.setattr(base, "load_settings", self.patch_settings())
+
+        def patch_settings(self):
+            def load_settings(folder):
+                return self.settings
+
+            return load_settings
+
+    return MockSettings(DicomSyncSettings(places={}))

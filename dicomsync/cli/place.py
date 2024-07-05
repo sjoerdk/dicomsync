@@ -5,6 +5,7 @@ from tabulate import tabulate
 from dicomsync.cli.base import DicomSyncContext
 from dicomsync.local import DICOMRootFolder, ZippedDICOMRootFolder
 from dicomsync.logs import get_module_logger
+from dicomsync.xnat import SerializableXNATProjectPreArchive
 
 logger = get_module_logger("cli.place")
 
@@ -50,7 +51,7 @@ def add(context: DicomSyncContext):
 @click.argument("key", type=str)
 @click.argument("path_in", type=click.Path())
 def add_dicom_root_folder(context: DicomSyncContext, path_in, key):
-    """Show all places"""
+    """Add folder containing patient/study folders"""
     settings = context.load_settings()
     dicom_root_folder = DICOMRootFolder(path=path_in)
     logger.debug(f"Adding {dicom_root_folder}")
@@ -69,7 +70,7 @@ def add_dicom_root_folder(context: DicomSyncContext, path_in, key):
 @click.argument("key", type=str)
 @click.argument("path_in", type=click.Path())
 def add_zipped_dicom_root_folder(context: DicomSyncContext, path_in, key):
-    """Show all places"""
+    """Add folder containing patient/zip studies"""
     settings = context.load_settings()
     folder = ZippedDICOMRootFolder(path=path_in)
     logger.debug(f"Adding {folder}")
@@ -83,9 +84,33 @@ def add_zipped_dicom_root_folder(context: DicomSyncContext, path_in, key):
     click.echo(f"added {folder} as '{key}'")
 
 
+@click.command(short_help="add ZippedDICOMRootFolder", name="xnat_pre_archive")
+@click.pass_obj
+@click.argument("key", type=str)
+@click.argument("server", type=str)
+@click.argument("project", type=str)
+@click.argument("user", type=str)
+def add_xnat_pre_archive(context: DicomSyncContext, key, server, project, user):
+    """Add XNAT pre-archive"""
+    settings = context.load_settings()
+    pre_archive = SerializableXNATProjectPreArchive(
+        server=server, project=project, user=user
+    )
+    logger.debug(f"Adding {pre_archive}")
+    places = settings.places
+    if key in places:
+        raise BadParameter(f"{key} already exists")
+    else:
+        settings.places[key] = pre_archive
+        settings.save()
+
+    click.echo(f"added {pre_archive} as '{key}'")
+
+
 place.add_command(cli_list)
 place.add_command(cli_remove)
 
 place.add_command(add)
 add.add_command(add_dicom_root_folder)
 add.add_command(add_zipped_dicom_root_folder)
+add.add_command(add_xnat_pre_archive)

@@ -4,34 +4,13 @@ from pathlib import Path
 
 from click.testing import CliRunner
 
-from dicomsync.cli import base
 from dicomsync.cli.base import DicomSyncContext
 from dicomsync.cli.entrypoint import main
 from dicomsync.persistence import (
     DEFAULT_SETTINGS_FILE_NAME,
-    DicomSyncSettings,
     DicomSyncSettingsFromFile,
 )
 from tests.conftest import MockContextCliRunner
-
-
-def mock_settings(monkeypatch):
-    """Settings loaded by CLI will be empty default settings.
-
-    You can change settings by settings mock_settings.settings
-
-    Returns
-    -------
-    MockSettings
-
-    """
-
-    class MockSettings:
-        def __init__(self, settings):
-            self.settings = settings
-            monkeypatch.setattr(base, "load_settings", lambda x: self.settings)
-
-    return MockSettings(DicomSyncSettings(places={}))
 
 
 def test_save_load_to_local_dir(tmpdir):
