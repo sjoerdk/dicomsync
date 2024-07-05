@@ -2,11 +2,13 @@
 import logging
 import os
 from dataclasses import dataclass
+from functools import wraps
 from pathlib import Path
 
+import click
 from click import UsageError
 
-from dicomsync.exceptions import NoSettingsFoundError
+from dicomsync.exceptions import NoSettingsFoundError, PasswordNotFoundError
 from dicomsync.logs import get_module_logger, install_colouredlogs
 from dicomsync.persistence import DicomSyncSettingsFromFile
 
@@ -59,3 +61,36 @@ def load_settings(folder):
     except NoSettingsFoundError as e:
         logger.warning(str(e))
         raise UsageError(str(e)) from e
+
+
+def handle_dicomsync_exceptions(func):
+    """Decorator for handling dicomsync exceptions more usefully than just raising"""
+
+    @wraps(func)
+    def with_handling(*args, **kwargs):
+        try:
+            func(*args, **kwargs)
+        except PasswordNotFoundError as e:
+            logger.error(e)
+            raise click.UsageError(e) from e
+
+    return with_handling
+
+
+def dicom_sync_command(**kwargs):
+    """Combines decorators used for all click functions inside a ClickCommandGroup
+    Identical to
+
+    @click.command(**kwargs)
+    @click.pass_obj
+    @handle_dicomsync_exceptions
+
+    Just to prevent duplicated code
+    """
+
+    def decorated(func):
+        return click.command(**kwargs)(
+            click.pass_obj(handle_dicomsync_exceptions(func))
+        )
+
+    return decorated

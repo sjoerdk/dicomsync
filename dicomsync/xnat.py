@@ -1,6 +1,6 @@
 """Handles imaging studies in XNAT servers"""
+import os
 from contextlib import contextmanager
-from os import environ
 from typing import Any, List, Literal, Optional
 
 import xnat
@@ -13,7 +13,11 @@ from dicomsync.core import (
     Place,
     Subject,
 )
-from dicomsync.exceptions import DICOMSyncError, StudyAlreadyExistsError
+from dicomsync.exceptions import (
+    DICOMSyncError,
+    PasswordNotFoundError,
+    StudyAlreadyExistsError,
+)
 from dicomsync.local import ZippedDICOMStudy
 from dicomsync.logs import get_module_logger
 
@@ -232,17 +236,41 @@ class SerializableXNATProjectPreArchive(Place):
     _pre_archive: Optional[XNATProjectPreArchive] = None
 
     def get_pre_archive(self) -> XNATProjectPreArchive:
+        """
+
+        Raises
+        ------
+        PasswordNotFoundError
+            If password could not be read when initializing connecting to pre_archive
+        """
         if not self._pre_archive:
+            logger.debug("XNAT pre archive is not initialized yet. Connecting..")
             self._pre_archive = XNATProjectPreArchive(
                 connection=xnat.connect(
                     server=self.server,
                     user=self.user,
-                    password=environ["XNAT_PASS"],
+                    password=self.load_xnat_password(self.user),
                     no_parse_model=False,
                 ),
-                project=self.project,
+                project_name=self.project,
             )
         return self._pre_archive
+
+    @staticmethod
+    def load_xnat_password(user):
+        """Get XNAT_PASS from environment
+
+        Raises
+        ------
+        PasswordNotFoundError
+        """
+        try:
+            return os.environ["XNAT_PASS"]
+        except KeyError as e:
+            raise PasswordNotFoundError(
+                f"Cannot get password for user '{user}'. XNAT_PASS not set in"
+                f" environment. Use 'export XNAT_PASS=<pass>' to set it"
+            ) from e
 
     def contains(self, study: ImagingStudy) -> bool:
         """Return true if this place contains this ImagingStudy"""

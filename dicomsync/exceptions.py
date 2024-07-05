@@ -8,3 +8,7 @@ class StudyAlreadyExistsError(DICOMSyncError):
 
 class NoSettingsFoundError(DICOMSyncError):
     pass
+
+
+class PasswordNotFoundError(DICOMSyncError):
+    pass

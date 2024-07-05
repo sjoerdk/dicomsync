@@ -2,7 +2,8 @@ import click
 from click import BadParameter
 from tabulate import tabulate
 
-from dicomsync.cli.base import DicomSyncContext
+from dicomsync.cli.base import DicomSyncContext, dicom_sync_command
+from dicomsync.cli.click_parameter_types import PlaceKeyParameterType
 from dicomsync.local import DICOMRootFolder, ZippedDICOMRootFolder
 from dicomsync.logs import get_module_logger
 from dicomsync.xnat import SerializableXNATProjectPreArchive
@@ -107,8 +108,20 @@ def add_xnat_pre_archive(context: DicomSyncContext, key, server, project, user):
     click.echo(f"added {pre_archive} as '{key}'")
 
 
+@dicom_sync_command()
+@click.argument("place", type=PlaceKeyParameterType())
+def ls(context: DicomSyncContext, place):
+    """List studies in a place"""
+    all = place.all_studies()
+    patients = {str(x.subject) for x in all}
+    click.echo(f"Found {len(all)} studies over {len(patients)} patients in {place}")
+    click.echo("-----------------------------------")
+    click.echo("\n".join([x.key() for x in place.all_studies()]))
+
+
 place.add_command(cli_list)
 place.add_command(cli_remove)
+place.add_command(ls)
 
 place.add_command(add)
 add.add_command(add_dicom_root_folder)
