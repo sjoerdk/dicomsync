@@ -3,6 +3,7 @@ import click
 
 from dicomsync.cli.base import DicomSyncContext, configure_logging, get_context
 from dicomsync.cli.place import place
+from dicomsync.cli.send import cli_send
 from dicomsync.logs import get_module_logger
 
 logger = get_module_logger("entrypoint")
@@ -36,3 +37,4 @@ def status(context: DicomSyncContext):
 
 main.add_command(status)
 main.add_command(place)
+main.add_command(cli_send)

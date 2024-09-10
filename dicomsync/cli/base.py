@@ -8,9 +8,13 @@ from pathlib import Path
 import click
 from click import UsageError
 
-from dicomsync.exceptions import NoSettingsFoundError, PasswordNotFoundError
+from dicomsync.exceptions import (
+    DICOMSyncError,
+    NoSettingsFoundError,
+    PasswordNotFoundError,
+)
 from dicomsync.logs import get_module_logger, install_colouredlogs
-from dicomsync.persistence import DicomSyncSettingsFromFile
+from dicomsync.persistence import DicomSyncSettings, DicomSyncSettingsFromFile
 
 logger = get_module_logger("dicomsync")
 
@@ -49,6 +53,10 @@ def get_context() -> DicomSyncContext:
 
 def load_settings(folder):
     """Load settings from given folder
+
+    Returns
+    -------
+    DicomSyncSettingsFromFile
 
     Raises
     ------
@@ -94,3 +102,32 @@ def dicom_sync_command(**kwargs):
         )
 
     return decorated
+
+
+def get_key_for_place(place, settings: DicomSyncSettings):
+    """Find the key that the given place is stored under
+
+    Returns
+    -------
+    Place
+        The first place found in settings that matches the given place
+
+    Raises
+    ------
+    DICOMSyncError
+        if place is not under any key in settings
+
+    Notes
+    -----
+    Will return the first matching place object in settings. If for any reason a place
+    is present twice in settings, only the first one will be returned
+
+    """
+    for key, place_found in settings.places.items():
+        if place.dict() == place_found.dict():
+            return key
+
+    raise DICOMSyncError(
+        f"Place not found in settings. Looked for {place} in "
+        f"{list(settings.places.keys())} but found no match"
+    )
