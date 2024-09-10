@@ -1,5 +1,7 @@
 """Shared pytest fixtures and methods"""
+import shutil
 from pathlib import Path
+from unittest.mock import Mock
 
 import pytest
 from _pytest.fixtures import fixture
@@ -133,3 +135,14 @@ def mock_settings(monkeypatch):
             return load_settings
 
     return MockSettings(DicomSyncSettings(places={}))
+
+
+@fixture
+def mock_copy_functions(monkeypatch):
+    """Replace shutil and mkdir by mocks so no actual files get moved"""
+    mocked = Mock(spec=shutil)
+
+    monkeypatch.setattr("dicomsync.local.shutil", mocked)
+    monkeypatch.setattr("dicomsync.local.Path.mkdir", Mock())
+
+    return mocked

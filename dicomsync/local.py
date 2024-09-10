@@ -1,7 +1,6 @@
 """Handling imaging studies on local disks"""
 import shutil
 from pathlib import Path
-from shutil import copyfile
 from typing import List, Literal, Union
 
 from dicomsync.core import (
@@ -96,7 +95,7 @@ class DICOMRootFolder(Place):
         count = 0
         for file in folder.all_files():
             count += 1
-            copyfile(file, study_path / file.name)
+            shutil.copyfile(file, study_path / file.name)
 
         logger.debug(f"copied {count} files to {self}")
 
