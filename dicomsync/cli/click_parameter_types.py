@@ -70,13 +70,15 @@ class PlaceKeyParameterType(ParamType):
 
 
 class ImagingStudyParameterType(ParamType):
-    """A keyword referencing a single imaging study in a place. Format <Place>/<Key>"""
+    """A keyword referencing a single imaging study in a place.
+    Format <Place>:<patient>/<Key>
+    """
 
     name = "imaging_study_key"
-    separator = "/"  # between place and key
+    separator = ":"  # between place and key
 
     def convert(self, value, param, ctx):
-        """Try to parse <Place>/<Key>, check whether place exists.
+        """Try to parse <Place>:<patient>/<Key>, check whether place exists.
 
         Returns
         -------
@@ -92,7 +94,7 @@ class ImagingStudyParameterType(ParamType):
             place_key, study_key = value.split(self.separator)
         except ValueError:
             self.fail(
-                message=f'Expected format "place/study", but could not find two'
+                message=f'Expected format "place:patient/study", but could not find two'
                 f' string separated by "{self.separator}"'
             )
         if not study_key:

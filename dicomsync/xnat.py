@@ -283,3 +283,6 @@ class SerializableXNATProjectPreArchive(Place):
         import
         """
         return self.get_pre_archive().all_studies()
+
+    def send_zipped_study(self, zipped_study: ZippedDICOMStudy):
+        return self.get_pre_archive().send_zipped_study(zipped_study)

@@ -36,7 +36,7 @@ def test_save_load_to_local_dir(a_runner_with_settings):
     runner = a_runner_with_settings
     response = runner.invoke(
         main,
-        args=["-v", "send", "a_folder/study", "a_pre_archive"],
+        args=["-v", "send", "a_folder:patient/study", "a_pre_archive"],
         catch_exceptions=True,
     )
     # a_folder/study does not exist, so exception

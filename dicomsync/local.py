@@ -165,7 +165,7 @@ class ZippedDICOMRootFolder(Place):
         StudyNotFoundError
             If study for key is not there
         """
-        study = next((x for x in self.all_studies() if x.key == key), None)
+        study = next((x for x in self.all_studies() if x.key() == key), None)
         if not study:
             raise StudyNotFoundError(f"Study '{key}' not found in {self}")
         return study
