@@ -9,7 +9,6 @@ from dicomsync.core import (
     ImagingStudy,
     Place,
     Subject,
-    make_slug,
 )
 from dicomsync.exceptions import (
     DICOMSyncError,
@@ -30,9 +29,6 @@ class DICOMStudyFolder(ImagingStudy):
     def __init__(self, subject: Subject, description: str, path: Union[Path, str]):
         super().__init__(subject, description)
         self.path = Path(path)
-
-    def key(self) -> str:
-        return make_slug(f"{self.subject.name}_{self.description}")
 
     def all_files(self):
         return [x for x in self.path.glob("*") if x.is_file()]
@@ -126,9 +122,6 @@ class ZippedDICOMStudy(ImagingStudy):
     def __init__(self, subject: Subject, description: str, path: Union[Path, str]):
         super().__init__(subject, description)
         self.path = Path(path)
-
-    def key(self) -> str:
-        return make_slug(f"{self.subject.name}_{self.description}")
 
     def __str__(self):
         return f"ZippedDICOMStudy {self.subject.name} - {self.description}: {self.path}"

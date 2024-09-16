@@ -62,7 +62,7 @@ class ImagingStudy:
             Unique identifier for this study.
 
         """
-        raise NotImplementedError()
+        return make_slug(self.subject.name) + "/" + make_slug(self.description)
 
 
 class Place(BaseModel):

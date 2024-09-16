@@ -53,18 +53,6 @@ class XNATUploadedStudy(ImagingStudy):
     def __init__(self, subject: Subject, description: str):
         super().__init__(subject, description)
 
-    def key(self) -> str:
-        """Unique identifier. This is used to check whether an imaging study exists
-        in a place.
-
-        Returns
-        -------
-        str
-            Unique identifier for this study.
-
-        """
-        return f"{self.subject.name}_{self.description}".lower()
-
     def __str__(self):
         return self.key()
 
