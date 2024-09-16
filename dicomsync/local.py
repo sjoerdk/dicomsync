@@ -11,7 +11,11 @@ from dicomsync.core import (
     Subject,
     make_slug,
 )
-from dicomsync.exceptions import DICOMSyncError, StudyAlreadyExistsError
+from dicomsync.exceptions import (
+    DICOMSyncError,
+    StudyAlreadyExistsError,
+    StudyNotFoundError,
+)
 from dicomsync.logs import get_module_logger
 
 logger = get_module_logger("local")
@@ -61,6 +65,19 @@ class DICOMRootFolder(Place):
     def contains(self, study: ImagingStudy) -> bool:
         """Return true if this place contains this ImagingStudy"""
         return study.key() in (x.key() for x in self.all_studies())
+
+    def get_study(self, key: str) -> ImagingStudy:
+        """Return the imaging study corresponding to key
+
+        Raises
+        ------
+        StudyNotFoundError
+            If study for key is not there
+        """
+        study = next((x for x in self.all_studies() if x.key() == key), None)
+        if not study:
+            raise StudyNotFoundError(f"Study '{key}' not found in {self}")
+        return study
 
     def all_studies(self) -> List[DICOMStudyFolder]:
         studies = []
@@ -146,6 +163,19 @@ class ZippedDICOMRootFolder(Place):
     def contains(self, study: ImagingStudy) -> bool:
         """Return true if this place contains this ImagingStudy"""
         return study.key() in (x.key() for x in self.all_studies())
+
+    def get_study(self, key: str) -> ImagingStudy:
+        """Return the imaging study corresponding to key
+
+        Raises
+        ------
+        StudyNotFoundError
+            If study for key is not there
+        """
+        study = next((x for x in self.all_studies() if x.key == key), None)
+        if not study:
+            raise StudyNotFoundError(f"Study '{key}' not found in {self}")
+        return study
 
     def all_studies(self) -> List[ZippedDICOMStudy]:
         studies = []

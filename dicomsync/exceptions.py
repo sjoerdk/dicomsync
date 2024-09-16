@@ -6,6 +6,10 @@ class StudyAlreadyExistsError(DICOMSyncError):
     pass
 
 
+class StudyNotFoundError(DICOMSyncError):
+    pass
+
+
 class NoSettingsFoundError(DICOMSyncError):
     pass
 

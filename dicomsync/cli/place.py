@@ -6,6 +6,7 @@ from dicomsync.cli.base import DicomSyncContext, dicom_sync_command
 from dicomsync.cli.click_parameter_types import PlaceKeyParameterType
 from dicomsync.local import DICOMRootFolder, ZippedDICOMRootFolder
 from dicomsync.logs import get_module_logger
+from dicomsync.persistence import DicomSyncSettingsFromFile
 from dicomsync.xnat import SerializableXNATProjectPreArchive
 
 logger = get_module_logger("cli.place")
@@ -27,6 +28,16 @@ def cli_list(context: DicomSyncContext):
     click.echo(tabulate(table, headers="keys"))
 
 
+@click.command(short_help="Write empty settings file", name="init")
+@click.pass_obj
+def cli_init(context: DicomSyncContext):
+    """Write empty settings file in current dir"""
+    settings_path = DicomSyncSettingsFromFile.get_default_file(context.current_dir)
+    logger.debug(f'Writing empty settings to "{settings_path}"')
+    click.echo("Writing empty settings file to current dir")
+    DicomSyncSettingsFromFile(path=settings_path, places={}).save()
+
+
 @click.command(short_help="Remove a place", name="remove")
 @click.argument("key", type=str)
 @click.pass_obj
@@ -38,7 +49,7 @@ def cli_remove(context: DicomSyncContext, key):
         settings.save()
     except KeyError as e:
         raise BadParameter(f"place '{key}' does not exist") from e
-    click.echo(f'removed place "{key}"')
+    logger.info(f'removed place "{key}"')
 
 
 @click.group()
@@ -63,7 +74,7 @@ def add_dicom_root_folder(context: DicomSyncContext, path_in, key):
         settings.places[key] = dicom_root_folder
         settings.save()
 
-    click.echo(f"added {dicom_root_folder} as '{key}'")
+    logger.info(f"added {dicom_root_folder} as '{key}'")
 
 
 @click.command(short_help="add ZippedDICOMRootFolder", name="zipped_root")
@@ -82,7 +93,7 @@ def add_zipped_dicom_root_folder(context: DicomSyncContext, path_in, key):
         settings.places[key] = folder
         settings.save()
 
-    click.echo(f"added {folder} as '{key}'")
+    logger.info(f"added {folder} as '{key}'")
 
 
 @click.command(short_help="add ZippedDICOMRootFolder", name="xnat_pre_archive")
@@ -105,7 +116,7 @@ def add_xnat_pre_archive(context: DicomSyncContext, key, server, project, user):
         settings.places[key] = pre_archive
         settings.save()
 
-    click.echo(f"added {pre_archive} as '{key}'")
+    logger.info(f"added {pre_archive} as '{key}'")
 
 
 @dicom_sync_command()
@@ -122,6 +133,7 @@ def ls(context: DicomSyncContext, place):
 place.add_command(cli_list)
 place.add_command(cli_remove)
 place.add_command(ls)
+place.add_command(cli_init)
 
 place.add_command(add)
 add.add_command(add_dicom_root_folder)

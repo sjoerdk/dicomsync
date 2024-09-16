@@ -7,6 +7,9 @@ clearer
 from dicomsync.core import ImagingStudy, Place
 from dicomsync.exceptions import DICOMSyncError
 from dicomsync.local import DICOMStudyFolder, ZippedDICOMStudy
+from dicomsync.logs import get_module_logger
+
+logger = get_module_logger("routing")
 
 
 class SwitchBoard:
@@ -21,8 +24,15 @@ class SwitchBoard:
         ZippedDICOMStudy: "send_zipped_study",
     }
 
-    def send(self, study: ImagingStudy, place: Place):
+    def send(self, study: ImagingStudy, place: Place, dry_run=False):
         """Send study to place
+
+        Parameters
+        ----------
+        study
+        place
+        dry_run: Bool, optional
+             If true, don't actually send anything, just log what would have happened
 
         Returns
         -------
@@ -47,6 +57,18 @@ class SwitchBoard:
             )
 
         # run this method to send study to the place
+        if dry_run:
+            logger.debug("--dry-run set. Only simulating copy")
+            if hasattr(place, method):
+                logger.info(f"Sending {study} to {type(place).__name__}.{method}")
+                return
+            else:
+                raise SendNotImplementedError(
+                    f"No method '{type(place).__name__}.{method}()' found. You cannot "
+                    f"send a study of type {type(study)} to a place of "
+                    f"type {type(place)}"
+                )
+
         try:
             getattr(place, method)(study)
         except AttributeError as e:

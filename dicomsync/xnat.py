@@ -17,6 +17,7 @@ from dicomsync.exceptions import (
     DICOMSyncError,
     PasswordNotFoundError,
     StudyAlreadyExistsError,
+    StudyNotFoundError,
 )
 from dicomsync.local import ZippedDICOMStudy
 from dicomsync.logs import get_module_logger
@@ -121,6 +122,19 @@ class XNATProjectPreArchive(Place):
     def contains(self, study: ImagingStudy) -> bool:
         """Return true if this place contains this ImagingStudy"""
         return study.key() in (x.key() for x in self.all_studies())
+
+    def get_study(self, key: str) -> ImagingStudy:
+        """Return the imaging study corresponding to key
+
+        Raises
+        ------
+        StudyNotFoundError
+            If study for key is not there
+        """
+        study = next((x for x in self.all_studies() if x.key == key), None)
+        if not study:
+            raise StudyNotFoundError(f"Study '{key}' not found in {self}")
+        return study
 
     def all_studies(self) -> List[XNATUploadedStudy]:
         """Info on studies from XNAT server which are still in pre-archive, awaiting

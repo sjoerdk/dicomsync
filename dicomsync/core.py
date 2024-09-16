@@ -72,6 +72,16 @@ class Place(BaseModel):
         """Return true if this place contains this ImagingStudy"""
         raise NotImplementedError()
 
+    def get_study(self, key: str) -> ImagingStudy:
+        """Return the imaging study corresponding to key
+
+        Raises
+        ------
+        StudyNotFoundError
+            If study for key is not there
+        """
+        raise NotImplementedError()
+
     def all_studies(self) -> Iterable[ImagingStudy]:
         raise NotImplementedError()
 
