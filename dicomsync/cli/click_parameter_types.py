@@ -2,6 +2,7 @@
 from click import ParamType
 
 from dicomsync.cli.base import DicomSyncContext
+from dicomsync.core import ImagingStudyIdentifier
 from dicomsync.exceptions import DICOMSyncError
 
 
@@ -75,14 +76,13 @@ class ImagingStudyParameterType(ParamType):
     """
 
     name = "imaging_study_key"
-    separator = ":"  # between place and key
 
     def convert(self, value, param, ctx):
         """Try to parse <Place>:<patient>/<Key>, check whether place exists.
 
         Returns
         -------
-        Place, key
+        Place, ImagingStudyIdentifier
             The Place instance that was saved in settings + imaging study key
 
         """
@@ -91,17 +91,11 @@ class ImagingStudyParameterType(ParamType):
             return None  # is default value if parameter not given
 
         try:
-            place_key, study_key = value.split(self.separator)
-        except ValueError:
-            self.fail(
-                message=f'Expected format "place:patient/study", but could not find two'
-                f' string separated by "{self.separator}"'
-            )
-        if not study_key:
-            self.fail(message="Study key was empty")
-
+            identifier = ImagingStudyIdentifier.init_from_string(value)
+        except DICOMSyncError as e:
+            self.fail(message=str(e))
         try:
-            return get_place_key(place_key, ctx), study_key
+            return get_place_key(identifier.place_name, ctx), identifier
         except PlaceKeyParamError as e:
             self.fail(str(e))
 

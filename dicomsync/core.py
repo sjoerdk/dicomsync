@@ -5,6 +5,8 @@ from typing import Iterable
 from pydantic import BaseModel
 from slugify import slugify
 
+from dicomsync.exceptions import DICOMSyncError
+
 
 def make_slug(string_in: str) -> str:
     """Make sure the string is a valid slug, usable in a URL or path.
@@ -63,6 +65,60 @@ class ImagingStudy:
 
         """
         return make_slug(self.subject.name) + "/" + make_slug(self.description)
+
+
+class ImagingStudyIdentifier:
+    """Unique identifier for a study in dicomsync. Place:patient/study
+
+    Can be represented as a single string
+    """
+
+    PLACE_SEPERATOR = ":"
+    STUDY_SEPARATOR = "/"
+
+    def __init__(self, place_name: str, patient: Subject, study_key: str):
+        self.place_name = place_name
+        self.patient = patient
+        self.study_key = study_key
+
+    def __str__(self):
+        return (
+            f"{self.place_name}{self.PLACE_SEPERATOR}{self.patient.name}"
+            f"{self.STUDY_SEPARATOR}{self.study_key}"
+        )
+
+    @classmethod
+    def init_from_string(cls, string_in):
+        try:
+            place_name, rest = string_in.split(cls.PLACE_SEPERATOR)
+            patient_name, study_key = rest.split(cls.STUDY_SEPARATOR)
+        except ValueError as e:
+            raise DICOMSyncError(
+                f"Expected format '<place>{cls.PLACE_SEPERATOR}"
+                f"<patient>{cls.STUDY_SEPARATOR}<study>'"
+            ) from e
+        return cls(
+            place_name=place_name,
+            patient=Subject(name=patient_name),
+            study_key=study_key,
+        )
+
+    def as_study_key(self) -> str:
+        """Key for study part only, without place"""
+        return f"{self.patient.name}{self.STUDY_SEPARATOR}{self.study_key}"
+
+    def to_slug(self) -> "ImagingStudyIdentifier":
+        """A new identifier where each element has been slugified
+
+        dicomsync internally always uses slug identifiers but the original data might
+        not be like that. Sometimes you want to be able to copy-pase a folder name
+        with dots as a target.
+        """
+        return ImagingStudyIdentifier(
+            place_name=make_slug(self.place_name),
+            patient=self.patient,
+            study_key=make_slug(self.study_key),
+        )
 
 
 class Place(BaseModel):
