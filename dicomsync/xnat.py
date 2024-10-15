@@ -1,5 +1,6 @@
 """Handles imaging studies in XNAT servers"""
 import os
+import tempfile
 from contextlib import contextmanager
 from typing import Any, List, Literal, Optional
 
@@ -19,7 +20,7 @@ from dicomsync.exceptions import (
     StudyAlreadyExistsError,
     StudyNotFoundError,
 )
-from dicomsync.local import ZippedDICOMStudy
+from dicomsync.local import DICOMStudyFolder, ZippedDICOMRootFolder, ZippedDICOMStudy
 from dicomsync.logs import get_module_logger
 
 logger = get_module_logger("xnat")
@@ -200,6 +201,19 @@ class XNATProjectPreArchive(Place):
             raise DICOMSyncError(f"Upload failed for '{zipped_study}'") from e
         logger.debug(f"Uploading finished: {zipped_study}")
 
+    def send_dicom_folder(self, folder: DICOMStudyFolder):
+        """Zip this folder to temp dir and then send"""
+        logger.info(f"Sending {folder} to {self}")
+        with tempfile.TemporaryDirectory() as tmpdir:
+            logger.debug(f"zipping to temporary zip location {tmpdir}")
+            temp_zipped_root = ZippedDICOMRootFolder(path=tmpdir)
+            temp_zipped_root.send_dicom_folder(folder)
+            zipped = temp_zipped_root.get_study(folder.key())
+            logger.debug("zipping done. On to upload")
+            self.send_zipped_study(zipped)
+            logger.debug("uploading done. Deleting zip")
+            os.remove(zipped.path)
+
     def assert_has_study(self, zipped_study: ZippedDICOMStudy) -> AssertionResult:
         """Make sure the zipped study is in XNAT. If not, upload"""
 
@@ -286,3 +300,6 @@ class SerializableXNATProjectPreArchive(Place):
 
     def send_zipped_study(self, zipped_study: ZippedDICOMStudy):
         return self.get_pre_archive().send_zipped_study(zipped_study)
+
+    def send_dicom_folder(self, folder: DICOMStudyFolder):
+        return self.get_pre_archive().send_dicom_folder(folder)

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "dicomsync"
-version = "0.2.0"
+version = "0.2.1"
 description = "Synchronize medical imaging studies between storage modalities"
 authors = ["sjoerdk <sjoerd.kerkstra@radboudumc.nl>"]
 license = "apache"
