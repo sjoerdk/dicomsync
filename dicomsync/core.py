@@ -67,11 +67,8 @@ class ImagingStudy:
         return make_slug(self.subject.name) + "/" + make_slug(self.description)
 
 
-class ImagingStudyIdentifier:
-    """Unique identifier for a study in dicomsync. Place:patient/study
-
-    Can be represented as a single string
-    """
+class StudyURI:
+    """Unique identifier for a study in dicomsync. Format <Place>:<patient>/<study>"""
 
     PLACE_SEPERATOR = ":"
     STUDY_SEPARATOR = "/"
@@ -107,14 +104,14 @@ class ImagingStudyIdentifier:
         """Key for study part only, without place"""
         return f"{self.patient.name}{self.STUDY_SEPARATOR}{self.study_key}"
 
-    def to_slug(self) -> "ImagingStudyIdentifier":
+    def to_slug(self) -> "StudyURI":
         """A new identifier where each element has been slugified
 
         dicomsync internally always uses slug identifiers but the original data might
         not be like that. Sometimes you want to be able to copy-pase a folder name
         with dots as a target.
         """
-        return ImagingStudyIdentifier(
+        return StudyURI(
             place_name=make_slug(self.place_name),
             patient=self.patient,
             study_key=make_slug(self.study_key),

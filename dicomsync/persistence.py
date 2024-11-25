@@ -54,4 +54,4 @@ class DicomSyncSettingsFromFile(DicomSyncSettings):
     def save(self):
         with open(self.path, "w") as f:
             # persist super as we don't want to write path into the file
-            f.write(super().model_dump_json(indent=2))
+            f.write(super().model_dump_json(indent=2, exclude={"path"}))

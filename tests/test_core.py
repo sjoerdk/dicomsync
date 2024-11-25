@@ -1,6 +1,6 @@
 import pytest
 
-from dicomsync.core import ImagingStudyIdentifier, Subject, make_slug
+from dicomsync.core import StudyURI, Subject, make_slug
 
 
 @pytest.mark.parametrize("string_in", ["oneword", "an_underscore", "", "234gffj4"])
@@ -17,12 +17,12 @@ def test_ensure_slug_fail(string_in):
 
 def test_study_identifier():
 
-    identifier = ImagingStudyIdentifier(
+    identifier = StudyURI(
         place_name="place1", patient=Subject(name="patient1"), study_key="study1"
     )
 
     assert str(identifier) == "place1:patient1/study1"
-    recreated = ImagingStudyIdentifier.init_from_string(str(identifier))
+    recreated = StudyURI.init_from_string(str(identifier))
     assert recreated.place_name == "place1"
     assert recreated.patient.name == "patient1"
     assert recreated.study_key == "study1"

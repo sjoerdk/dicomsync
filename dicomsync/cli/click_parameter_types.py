@@ -2,7 +2,7 @@
 from click import ParamType
 
 from dicomsync.cli.base import DicomSyncContext
-from dicomsync.core import ImagingStudyIdentifier
+from dicomsync.core import StudyURI
 from dicomsync.exceptions import DICOMSyncError
 
 
@@ -70,19 +70,19 @@ class PlaceKeyParameterType(ParamType):
         return "PLACE_KEY"
 
 
-class ImagingStudyParameterType(ParamType):
+class StudyURIParameterType(ParamType):
     """A keyword referencing a single imaging study in a place.
     Format <Place>:<patient>/<Key>
     """
 
-    name = "imaging_study_key"
+    name = "study_uri_key"
 
     def convert(self, value, param, ctx):
         """Try to parse <Place>:<patient>/<Key>, check whether place exists.
 
         Returns
         -------
-        Place, ImagingStudyIdentifier
+        Place, StudyURI
             The Place instance that was saved in settings + imaging study key
 
         """
@@ -91,7 +91,7 @@ class ImagingStudyParameterType(ParamType):
             return None  # is default value if parameter not given
 
         try:
-            identifier = ImagingStudyIdentifier.init_from_string(value)
+            identifier = StudyURI.init_from_string(value)
         except DICOMSyncError as e:
             self.fail(message=str(e))
         try:
@@ -100,7 +100,7 @@ class ImagingStudyParameterType(ParamType):
             self.fail(str(e))
 
     def __repr__(self):
-        return "IMAGING_STUDY_KEY"
+        return "STUDY_URI_KEY"
 
 
 class PlaceKeyParamError(DICOMSyncError):
