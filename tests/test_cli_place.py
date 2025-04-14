@@ -1,14 +1,4 @@
-from pytest import fixture
-
-from dicomsync.cli.base import DicomSyncContext
 from dicomsync.cli.entrypoint import main
-from tests.conftest import MockContextCliRunner
-
-
-@fixture
-def a_runner(tmpdir):
-    """A click runner that makes sure tmpdir is current dir"""
-    return MockContextCliRunner(mock_context=DicomSyncContext(current_dir=tmpdir))
 
 
 def test_save_load_to_local_dir(a_runner):

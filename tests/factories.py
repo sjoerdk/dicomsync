@@ -11,7 +11,7 @@ class SubjectFactory(factory.Factory):
     class Meta:
         model = Subject
 
-    name = factory.sequence(lambda n: f"name_{n}")
+    name = factory.sequence(lambda n: f"subject{n}")
 
 
 class DICOMStudyFolderFactory(factory.Factory):
@@ -19,7 +19,7 @@ class DICOMStudyFolderFactory(factory.Factory):
         model = DICOMStudyFolder
 
     subject = factory.SubFactory(SubjectFactory)
-    description = factory.Sequence(lambda n: f"description_{n}")
+    description = factory.Sequence(lambda n: f"studyfolder{n}")
     path = factory.Sequence(lambda n: f"path{n}")
 
 
@@ -28,7 +28,7 @@ class ZippedDICOMStudyFactory(factory.Factory):
         model = ZippedDICOMStudy
 
     subject = factory.SubFactory(SubjectFactory)
-    description = factory.Sequence(lambda n: f"description_{n}")
+    description = factory.Sequence(lambda n: f"study{n}")
     path = factory.Sequence(lambda n: f"path{n}")
 
 

@@ -146,3 +146,9 @@ def mock_copy_functions(monkeypatch):
     monkeypatch.setattr("dicomsync.local.Path.mkdir", Mock())
 
     return mocked
+
+
+@fixture
+def a_runner(tmpdir):
+    """A click runner that makes sure tmpdir is current dir"""
+    return MockContextCliRunner(mock_context=DicomSyncContext(current_dir=tmpdir))
