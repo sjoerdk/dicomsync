@@ -30,13 +30,13 @@ def cli_send(
     """Send a single imaging study (format 'place/study') to a place."""
     source_place, source_study_identifier = study_uri
     try:
-        source_study = source_place.get_study(source_study_identifier.as_study_key())
+        source_study = source_place.get_study(source_study_identifier.study_key)
     except StudyNotFoundError:
         slug = source_study_identifier.to_slug()
         logger.debug(
             f'Study "{source_study_identifier}" not found. Trying slug "{slug}"'
         )
-        source_study = source_place.get_study(slug.as_study_key())
+        source_study = source_place.get_study(slug.study_key)
 
     settings = context.load_settings()
     board = SwitchBoard()

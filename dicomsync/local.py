@@ -1,13 +1,15 @@
 """Handling imaging studies on local disks"""
 import shutil
 from pathlib import Path
-from typing import List, Literal, Union
+from typing import Iterable, List, Literal, Union
 
 from dicomsync.core import (
     AssertionResult,
     AssertionStatus,
     ImagingStudy,
     Place,
+    StudyKey,
+    StudyQuery,
     Subject,
 )
 from dicomsync.exceptions import (
@@ -62,7 +64,7 @@ class DICOMRootFolder(Place):
         """Return true if this place contains this ImagingStudy"""
         return study.key() in (x.key() for x in self.all_studies())
 
-    def get_study(self, key: str) -> ImagingStudy:
+    def get_study(self, key: StudyKey) -> ImagingStudy:
         """Return the imaging study corresponding to key
 
         Raises
@@ -112,6 +114,9 @@ class DICOMRootFolder(Place):
 
         logger.debug(f"copied {count} files to {self}")
 
+    def query_studies(self, query: StudyQuery) -> Iterable[ImagingStudy]:
+        """Return all studies matching to the given query"""
+
 
 class ZippedDICOMStudy(ImagingStudy):
     """A local zipfile containing all the DICOM files for a single imaging study
@@ -157,7 +162,7 @@ class ZippedDICOMRootFolder(Place):
         """Return true if this place contains this ImagingStudy"""
         return study.key() in (x.key() for x in self.all_studies())
 
-    def get_study(self, key: str) -> ZippedDICOMStudy:
+    def get_study(self, key: StudyKey) -> ZippedDICOMStudy:
         """Return the imaging study corresponding to key
 
         Raises

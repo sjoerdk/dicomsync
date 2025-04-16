@@ -1,6 +1,8 @@
 from pathlib import Path
 from typing import Dict
 
+import pytest
+
 from dicomsync.cli.find import find
 from dicomsync.core import Subject
 from dicomsync.local import DICOMRootFolder, DICOMStudyFolder
@@ -48,22 +50,28 @@ def convert_to_places(input_dict, tmp_root) -> Dict[str, SerializablePlace]:
     return dict(places)
 
 
-def test_find(mock_settings, a_runner, tmp_path):
+@pytest.mark.parametrize(
+    "query,expected_output",
+    [
+        ("P:Pat1/St1_A", ["P:Pat1/St1_A"]),
+        ("P:Pat1/St1*", ["P:Pat1/St1_A"]),
+        ("P:Pat1/St1*", ["P:Pat1/St1_A"]),
+    ],
+)
+def test_find(mock_settings, a_runner, tmp_path, query, expected_output):
 
-    # add some mock place for
-    mock_place = {
-        "place1": {
-            "Patient1": ["Study1_A", "Study2_B"],
-            "Patient2": ["Study3_A", "Study4_B"],
+    # Some mock studies with very short names so checking output is easier
+    studies_data = {
+        "P": {
+            "Pat1": ["St1_A", "St2_B"],
+            "Pat2": ["St3_A", "St4_B"],
         },
     }
 
     mock_settings.settings.places = convert_to_places(
-        mock_place, tmp_root=Path(tmp_path)
+        studies_data, tmp_root=Path(tmp_path)
     )
 
-    response = a_runner.invoke(
-        find, args=["place1:patient1/key_1"], catch_exceptions=False
-    )
+    response = a_runner.invoke(find, args=[query], catch_exceptions=False)
 
     assert response.exit_code == 0

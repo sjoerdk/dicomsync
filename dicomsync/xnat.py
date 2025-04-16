@@ -12,6 +12,7 @@ from dicomsync.core import (
     AssertionStatus,
     ImagingStudy,
     Place,
+    StudyKey,
     Subject,
 )
 from dicomsync.exceptions import (
@@ -112,7 +113,7 @@ class XNATProjectPreArchive(Place):
         """Return true if this place contains this ImagingStudy"""
         return study.key() in (x.key() for x in self.all_studies())
 
-    def get_study(self, key: str) -> ImagingStudy:
+    def get_study(self, key: StudyKey) -> ImagingStudy:
         """Return the imaging study corresponding to key
 
         Raises

@@ -1,10 +1,8 @@
 """Custom click parameter types"""
-import re
-
 from click import ParamType
 
 from dicomsync.cli.base import DicomSyncContext
-from dicomsync.core import StudyURI
+from dicomsync.core import StudyQuery, StudyURI
 from dicomsync.exceptions import DICOMSyncError
 
 
@@ -105,14 +103,14 @@ class StudyURIParameterType(ParamType):
         return "STUDY_URI_KEY"
 
 
-class StudyURIQueryParameterType(ParamType):
+class StudyQueryParameterType(ParamType):
     """A keyword referencing one or more studies. Can contain wildcards
 
     Format <Place>:<patient>/<Key>
 
     Examples
     --------
-    Place1:patient1/key1 -> same as StudyURIParameterType
+    Place1:patient1/key1 -> same as StudyURI
     Place1:patient1/key* -> list of studies for 'patient1' starting with 'key'
     Place1:patient1/*    -> All studies for 'patient1'
     Place1:patient*      -> All studies for patients starting with 'patient'
@@ -121,7 +119,7 @@ class StudyURIQueryParameterType(ParamType):
 
     Returns
     -------
-    List[StudyURI]
+    StudyQuery
 
     Notes
     -----
@@ -129,7 +127,6 @@ class StudyURIQueryParameterType(ParamType):
     """
 
     name = "study_uri_query"
-    study_query_format = re.compile(r"\w+:\w+/\w")
 
     def convert(self, value, param, ctx):
         """Just validate format <Place>:<patient>/<Key>
@@ -146,12 +143,12 @@ class StudyURIQueryParameterType(ParamType):
 
         # validate format
         try:
-            return StudyURI.init_from_string(value)
+            return StudyQuery.init_from_string(value)
         except DICOMSyncError as e:
             self.fail(message=str(e))
 
     def __repr__(self):
-        return "STUDY_URI_QUERY"
+        return "STUDY_QUERY"
 
 
 class PlaceKeyParamError(DICOMSyncError):
