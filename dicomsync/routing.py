@@ -6,7 +6,7 @@ clearer
 """
 from dicomsync.core import ImagingStudy, Place
 from dicomsync.exceptions import DICOMSyncError
-from dicomsync.local import DICOMStudyFolder, ZippedDICOMStudy
+from dicomsync.filesystem import DICOMStudyFolder, ZippedDICOMStudy
 from dicomsync.logs import get_module_logger
 
 logger = get_module_logger("routing")

@@ -1,4 +1,5 @@
-"""Handling imaging studies on local disks"""
+"""Handling imaging studies on local and network filesystem"""
+
 import shutil
 from pathlib import Path
 from typing import Iterable, List, Literal, Union
@@ -8,10 +9,9 @@ from dicomsync.core import (
     AssertionStatus,
     ImagingStudy,
     Place,
-    StudyKey,
-    StudyQuery,
     Subject,
 )
+from dicomsync.references import StudyKey, StudyQuery
 from dicomsync.exceptions import (
     DICOMSyncError,
     StudyAlreadyExistsError,
@@ -51,7 +51,7 @@ class DICOMRootFolder(Place):
             study2/
         subject2/
             study1/
-        etc..
+        etc...
     """
 
     type_: Literal["DICOMRootFolder"] = "DICOMRootFolder"  # needed for serialization

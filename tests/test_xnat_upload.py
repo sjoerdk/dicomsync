@@ -4,7 +4,7 @@ from pathlib import Path
 from _pytest.fixtures import fixture
 
 from dicomsync.core import Subject
-from dicomsync.local import DICOMRootFolder, DICOMStudyFolder
+from dicomsync.filesystem import DICOMRootFolder, DICOMStudyFolder
 from tests.factories import DICOMStudyFolderFactory
 from tests.conftest import add_dummy_files
 

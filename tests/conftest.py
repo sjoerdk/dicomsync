@@ -10,7 +10,11 @@ from click.testing import CliRunner
 from dicomsync.cli import base
 from dicomsync.cli.base import DicomSyncContext
 from dicomsync.core import Subject
-from dicomsync.local import DICOMRootFolder, DICOMStudyFolder, ZippedDICOMRootFolder
+from dicomsync.filesystem import (
+    DICOMRootFolder,
+    DICOMStudyFolder,
+    ZippedDICOMRootFolder,
+)
 from dicomsync.persistence import DicomSyncSettings
 from dicomsync.xnat import SerializableXNATProjectPreArchive
 
@@ -142,8 +146,8 @@ def mock_copy_functions(monkeypatch):
     """Replace shutil and mkdir by mocks so no actual files get moved"""
     mocked = Mock(spec=shutil)
 
-    monkeypatch.setattr("dicomsync.local.shutil", mocked)
-    monkeypatch.setattr("dicomsync.local.Path.mkdir", Mock())
+    monkeypatch.setattr("dicomsync.filesystem.shutil", mocked)
+    monkeypatch.setattr("dicomsync.filesystem.Path.mkdir", Mock())
 
     return mocked
 

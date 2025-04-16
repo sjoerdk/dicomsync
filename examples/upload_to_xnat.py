@@ -3,7 +3,7 @@
 import logging
 import os
 
-from dicomsync.local import DICOMRootFolder, ZippedDICOMRootFolder
+from dicomsync.filesystem import DICOMRootFolder, ZippedDICOMRootFolder
 from pathlib import Path
 
 from dicomsync.ui import summarize_results

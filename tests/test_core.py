@@ -1,6 +1,7 @@
 import pytest
 
-from dicomsync.core import StudyKey, StudyQuery, StudyURI, Subject, make_slug
+from dicomsync.strings import make_slug
+from dicomsync.references import StudyKey, StudyQuery, StudyURI
 
 
 @pytest.mark.parametrize("string_in", ["oneword", "an_underscore", "", "234gffj4"])
@@ -19,13 +20,13 @@ def test_study_identifier():
 
     identifier = StudyURI(
         place_name="place1",
-        study_key=StudyKey(patient=Subject(name="patient1"), study_slug="study1"),
+        study_key=StudyKey(patient_name="patient1", study_slug="study1"),
     )
 
     assert str(identifier) == "place1:patient1/study1"
     recreated = StudyURI.init_from_string(str(identifier))
     assert recreated.place_name == "place1"
-    assert recreated.study_key.patient.name == "patient1"
+    assert recreated.study_key.patient_name == "patient1"
     assert recreated.study_key.study_slug == "study1"
 
 

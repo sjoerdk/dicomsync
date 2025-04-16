@@ -5,7 +5,8 @@ import click
 
 from dicomsync.cli.base import DicomSyncContext, dicom_sync_command
 from dicomsync.cli.click_parameter_types import StudyQueryParameterType
-from dicomsync.core import Place, StudyQuery, StudyURI
+from dicomsync.core import Place
+from dicomsync.references import StudyKey, StudyQuery, StudyURI
 from dicomsync.logs import get_module_logger
 
 logger = get_module_logger("cli.find")
@@ -43,6 +44,10 @@ def perform_query(places: Dict[str, Place], study_query: StudyQuery):
             (str(x.key) for x in place.all_studies()), study_query.key_pattern
         )
         for key in found_keys:
-            found.append(StudyURI(place_name=place_name, study_key=key))
+            found.append(
+                StudyURI(
+                    place_name=place_name, study_key=StudyKey.init_from_string(key)
+                )
+            )
 
     return found

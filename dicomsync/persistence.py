@@ -5,7 +5,7 @@ from typing import Dict, Union
 from pydantic import BaseModel
 
 from dicomsync.exceptions import NoSettingsFoundError
-from dicomsync.local import DICOMRootFolder, ZippedDICOMRootFolder
+from dicomsync.filesystem import DICOMRootFolder, ZippedDICOMRootFolder
 from dicomsync.logs import get_module_logger
 from dicomsync.xnat import SerializableXNATProjectPreArchive
 

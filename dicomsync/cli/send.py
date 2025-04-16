@@ -7,7 +7,8 @@ from dicomsync.cli.click_parameter_types import (
     StudyURIParameterType,
     PlaceKeyParameterType,
 )
-from dicomsync.core import StudyURI, Place
+from dicomsync.core import Place
+from dicomsync.references import StudyURI
 from dicomsync.exceptions import StudyNotFoundError
 from dicomsync.logs import get_module_logger
 from dicomsync.routing import SwitchBoard

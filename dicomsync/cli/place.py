@@ -4,7 +4,7 @@ from tabulate import tabulate
 
 from dicomsync.cli.base import DicomSyncContext, dicom_sync_command
 from dicomsync.cli.click_parameter_types import PlaceKeyParameterType
-from dicomsync.local import DICOMRootFolder, ZippedDICOMRootFolder
+from dicomsync.filesystem import DICOMRootFolder, ZippedDICOMRootFolder
 from dicomsync.logs import get_module_logger
 from dicomsync.persistence import DicomSyncSettingsFromFile
 from dicomsync.xnat import SerializableXNATProjectPreArchive

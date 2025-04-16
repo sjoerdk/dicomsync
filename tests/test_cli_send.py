@@ -5,7 +5,7 @@ from pytest import fixture
 
 from dicomsync.cli.base import DicomSyncContext
 from dicomsync.cli.entrypoint import main
-from dicomsync.local import DICOMRootFolder, ZippedDICOMRootFolder
+from dicomsync.filesystem import DICOMRootFolder, ZippedDICOMRootFolder
 from dicomsync.xnat import SerializableXNATProjectPreArchive
 from tests.conftest import MockContextCliRunner
 

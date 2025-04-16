@@ -5,7 +5,7 @@ import pytest
 
 from dicomsync.cli.find import find
 from dicomsync.core import Subject
-from dicomsync.local import DICOMRootFolder, DICOMStudyFolder
+from dicomsync.filesystem import DICOMRootFolder, DICOMStudyFolder
 from dicomsync.persistence import SerializablePlace
 from tests.factories import DICOMStudyFolderFactory
 

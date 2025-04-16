@@ -1,4 +1,4 @@
-from dicomsync.local import ZippedDICOMRootFolder
+from dicomsync.filesystem import ZippedDICOMRootFolder
 from dicomsync.persistence import DicomSyncSettings
 
 

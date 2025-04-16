@@ -2,7 +2,7 @@
 from click import ParamType
 
 from dicomsync.cli.base import DicomSyncContext
-from dicomsync.core import StudyQuery, StudyURI
+from dicomsync.references import StudyQuery, StudyURI
 from dicomsync.exceptions import DICOMSyncError
 
 

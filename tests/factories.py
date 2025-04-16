@@ -3,7 +3,7 @@ from unittest.mock import Mock
 import factory
 
 from dicomsync.core import Place, Subject
-from dicomsync.local import DICOMRootFolder, DICOMStudyFolder, ZippedDICOMStudy
+from dicomsync.filesystem import DICOMRootFolder, DICOMStudyFolder, ZippedDICOMStudy
 from dicomsync.xnat import XNATUploadedStudy
 
 

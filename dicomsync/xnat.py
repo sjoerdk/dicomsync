@@ -12,16 +12,20 @@ from dicomsync.core import (
     AssertionStatus,
     ImagingStudy,
     Place,
-    StudyKey,
     Subject,
 )
+from dicomsync.references import StudyKey
 from dicomsync.exceptions import (
     DICOMSyncError,
     PasswordNotFoundError,
     StudyAlreadyExistsError,
     StudyNotFoundError,
 )
-from dicomsync.local import DICOMStudyFolder, ZippedDICOMRootFolder, ZippedDICOMStudy
+from dicomsync.filesystem import (
+    DICOMStudyFolder,
+    ZippedDICOMRootFolder,
+    ZippedDICOMStudy,
+)
 from dicomsync.logs import get_module_logger
 
 logger = get_module_logger("xnat")
