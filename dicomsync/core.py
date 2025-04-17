@@ -4,7 +4,8 @@ from typing import Iterable
 
 from pydantic import BaseModel
 
-from dicomsync.references import StudyKey, StudyQuery
+from dicomsync.exceptions import StudyNotFoundError
+from dicomsync.references import LocalStudyQuery, StudyKey
 from dicomsync.strings import make_slug
 
 
@@ -47,16 +48,28 @@ class ImagingStudy:
         """
         return StudyKey(
             patient_name=self.subject.name,
-            study_slug=self.description + "/" + make_slug(self.description),
+            study_slug=self.description
+            + StudyKey.STUDY_SEPARATOR
+            + make_slug(self.description),
         )
 
 
 class Place(BaseModel):
     """Can contain imaging studies"""
 
+    # TODO: rewrite all child classes of Place to implement query_studies()
+
+    def query_studies(self, query: LocalStudyQuery) -> Iterable[ImagingStudy]:
+        """Return all studies matching to the given query.
+
+        This is the only Place function that needs to be implemented in child classes
+        """
+
+        raise NotImplementedError()
+
     def contains(self, study: ImagingStudy) -> bool:
         """Return true if this place contains this ImagingStudy"""
-        raise NotImplementedError()
+        return bool(self.query_studies(LocalStudyQuery(key_pattern=str(study.key))))
 
     def get_study(self, key: StudyKey) -> ImagingStudy:
         """Return the imaging study corresponding to key
@@ -66,15 +79,14 @@ class Place(BaseModel):
         StudyNotFoundError
             If study for key is not there
         """
-        raise NotImplementedError()
+        result = self.query_studies(LocalStudyQuery(key_pattern=str(key)))
+        if not result:
+            raise StudyNotFoundError(f"study '{str(key)}' not found")
+        return list(result)[0]
 
     def all_studies(self) -> Iterable[ImagingStudy]:
-        raise NotImplementedError()
-
-    def query_studies(self, query: StudyQuery) -> Iterable[ImagingStudy]:
-        """Return all studies matching to the given query"""
-
-        raise NotImplementedError()
+        """All studies in this place"""
+        return self.query_studies(LocalStudyQuery(key_pattern="*"))
 
 
 class AssertionStatus(str, Enum):

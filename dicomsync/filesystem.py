@@ -144,7 +144,7 @@ class ZippedDICOMRootFolder(Place):
             study2.zip
         subject2/
             study1.zip
-        etc..
+        etc...
     """
 
     type_: Literal["ZippedDICOMRootFolder"] = "ZippedDICOMRootFolder"

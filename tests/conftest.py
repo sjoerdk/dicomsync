@@ -1,4 +1,5 @@
 """Shared pytest fixtures and methods"""
+import logging
 import shutil
 from pathlib import Path
 from unittest.mock import Mock
@@ -17,6 +18,17 @@ from dicomsync.filesystem import (
 )
 from dicomsync.persistence import DicomSyncSettings
 from dicomsync.xnat import SerializableXNATProjectPreArchive
+
+
+@pytest.fixture(autouse=True)
+def disable_log_printing():
+    """Log messages were printed through test results. Stop that.
+
+    Removing all handlers from root logger. Logs can still be caught and inspected
+    by the `caplog` fixture, but nothing will be printed to console
+    """
+
+    logging.getLogger().handlers.clear()
 
 
 def add_dummy_files(studyfolder: DICOMStudyFolder, files=3):
