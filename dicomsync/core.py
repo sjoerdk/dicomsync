@@ -6,7 +6,6 @@ from pydantic import BaseModel
 
 from dicomsync.exceptions import StudyNotFoundError
 from dicomsync.references import LocalStudyQuery, StudyKey
-from dicomsync.strings import make_slug
 
 
 @dataclass
@@ -46,12 +45,7 @@ class ImagingStudy:
             Unique identifier for this study.
 
         """
-        return StudyKey(
-            patient_name=self.subject.name,
-            study_slug=self.description
-            + StudyKey.STUDY_SEPARATOR
-            + make_slug(self.description),
-        )
+        return StudyKey(patient_name=self.subject.name, study_slug=self.description)
 
 
 class Place(BaseModel):

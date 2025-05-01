@@ -17,8 +17,6 @@ logger = get_module_logger("cli.find")
 def find(context: DicomSyncContext, study_uri_query: StudyQuery):
     """Find DICOM studies in places"""
 
-    click.echo(f"find {study_uri_query}")
-
     # get current places
     settings = context.load_settings()
     found = perform_query(places=settings.places, study_query=study_uri_query)
@@ -41,7 +39,7 @@ def perform_query(places: Dict[str, Place], study_query: StudyQuery):
     for place_name in matching_place_names:
         place = places[place_name]
         found_keys = fnmatch.filter(
-            (str(x.key) for x in place.all_studies()), study_query.key_pattern
+            (str(x.key()) for x in place.all_studies()), study_query.key_pattern
         )
         for key in found_keys:
             found.append(

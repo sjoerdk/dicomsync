@@ -152,6 +152,15 @@ class StudyQuery:
             key_pattern=patient_pattern + StudyKey.STUDY_SEPARATOR + study_pattern,
         )
 
+    def query_string(self):
+        """Unique string representation of this query
+
+        the following should hold:
+        StudyQuery.init_from_string(string).query_string() == string
+
+        """
+        return self.place_pattern + StudyURI.PLACE_SEPERATOR + self.key_pattern
+
 
 class LocalStudyQuery(StudyQuery):
     """A StudyQuery that has an empty <place>. For searching within places

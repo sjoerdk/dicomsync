@@ -73,5 +73,6 @@ def test_find(mock_settings, a_runner, tmp_path, query, expected_output):
     )
 
     response = a_runner.invoke(find, args=[query], catch_exceptions=False)
-
+    for expected in expected_output:
+        assert expected in response.output
     assert response.exit_code == 0

@@ -61,7 +61,7 @@ class ExpectedError:
     ],
 )
 def test_study_query_regex(input_string, expected_output):
-    """Check whether this complicated regex parses the way I expect.
+    """Check whether this complicated regex in StudyQuery parses the way I expect.
 
     <Place>:<patient>/<Key>
 
@@ -98,3 +98,11 @@ def test_study_query_regex(input_string, expected_output):
             f"Expected '{input_string}' to be parsed as "
             f"{expected_output}, but found {actual_output} for regex {regex}"
         )
+
+
+@pytest.mark.parametrize("query_string", ("place:st/ser", "*:st/ser", "plac*:s*/ser"))
+def test_query_string_parsing(query_string):
+    """If you create a StudyQuery object from a query string, it should be able to
+    reconstruct that same string
+    """
+    assert StudyQuery.init_from_string(query_string).query_string() == query_string
