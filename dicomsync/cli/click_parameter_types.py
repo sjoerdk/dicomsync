@@ -144,7 +144,7 @@ class StudyQueryParameterType(ParamType):
         # validate format
         try:
             return StudyQuery.init_from_string(value)
-        except DICOMSyncError as e:
+        except (DICOMSyncError, ValueError) as e:
             self.fail(message=str(e))
 
     def __repr__(self):

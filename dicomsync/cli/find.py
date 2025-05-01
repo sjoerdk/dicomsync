@@ -1,5 +1,5 @@
 import fnmatch
-from typing import Dict
+from typing import Dict, List
 
 import click
 
@@ -24,13 +24,8 @@ def find(context: DicomSyncContext, study_uri_query: StudyQuery):
     print(f"found {len(found)}:\n" + "\n".join(list(map(str, found))))
 
 
-def perform_query(places: Dict[str, Place], study_query: StudyQuery):
-    """Find all studies in places that match query
-
-    Returns
-    -------
-    List[StudyURI]
-    """
+def perform_query(places: Dict[str, Place], study_query: StudyQuery) -> List[StudyURI]:
+    """Find all studies in places that match query"""
 
     found = []
     matching_place_names = [
