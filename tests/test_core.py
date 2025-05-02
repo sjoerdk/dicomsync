@@ -58,6 +58,7 @@ class ExpectedError:
         ("*", ("*", "", "")),
         ("**", ("**", "", "")),
         ("Pl1:pat*01*/*", ("Pl1", "pat*01*", "*")),
+        ("Pl1:*", ("Pl1", "*", "")),
     ],
 )
 def test_study_query_regex(input_string, expected_output):

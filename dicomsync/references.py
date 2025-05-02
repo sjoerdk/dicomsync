@@ -146,11 +146,12 @@ class StudyQuery:
         (place_pattern, patient_pattern, study_pattern) = cls.parse_query_string(
             query_string
         )
+        if study_pattern:
+            key_pattern = patient_pattern + StudyKey.STUDY_SEPARATOR + study_pattern
+        else:
+            key_pattern = patient_pattern
 
-        return cls(
-            place_pattern=place_pattern,
-            key_pattern=patient_pattern + StudyKey.STUDY_SEPARATOR + study_pattern,
-        )
+        return cls(place_pattern=place_pattern, key_pattern=key_pattern)
 
     def query_string(self):
         """Unique string representation of this query
@@ -159,7 +160,10 @@ class StudyQuery:
         StudyQuery.init_from_string(string).query_string() == string
 
         """
-        return self.place_pattern + StudyURI.PLACE_SEPERATOR + self.key_pattern
+        if self.key_pattern:
+            return self.place_pattern + StudyURI.PLACE_SEPERATOR + self.key_pattern
+        else:
+            return self.place_pattern
 
 
 class LocalStudyQuery(StudyQuery):

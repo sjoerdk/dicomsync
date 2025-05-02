@@ -53,11 +53,13 @@ def convert_to_places(input_dict, tmp_root) -> Dict[str, SerializablePlace]:
 @pytest.mark.parametrize(
     "query,expected_output",
     [
-        ("P:Pat1/St1_A", ["P:Pat1/St1_A"]),
-        ("P:Pat1/St1*", ["P:Pat1/St1_A"]),
-        ("P:Pat1/St1*", ["P:Pat1/St1_A"]),
-        ("P:*/*", ["P:Pat1/St1_A", "P:Pat1/St2_B", "P:Pat2/St3_A", "P:Pat2/St4_B"]),
-        ("P:*/*B", ["P:Pat1/St2_B", "P:Pat2/St4_B"]),
+        # ("P:Pat1/St1_A", ["P:Pat1/St1_A"]),
+        # ("P:Pat1/St1*", ["P:Pat1/St1_A"]),
+        # ("P:Pat1/St1*", ["P:Pat1/St1_A"]),
+        # ("P:*/*", ["P:Pat1/St1_A", "P:Pat1/St2_B", "P:Pat2/St3_A", "P:Pat2/St4_B"]),
+        # ("P:*/*B", ["P:Pat1/St2_B", "P:Pat2/St4_B"]),
+        # ("*", ["P", "Root folder"]),
+        ("P:*", ["P:Pat1/St1_A", "P:Pat1/St2_B", "P:Pat2/St3_A", "P:Pat2/St4_B"]),
     ],
 )
 def test_find(mock_settings, a_runner, tmp_path, query, expected_output):

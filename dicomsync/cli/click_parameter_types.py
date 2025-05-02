@@ -1,4 +1,6 @@
 """Custom click parameter types"""
+import re
+
 from click import ParamType
 
 from dicomsync.cli.base import DicomSyncContext
@@ -115,27 +117,23 @@ class StudyQueryParameterType(ParamType):
     Place1:patient1/*    -> All studies for 'patient1'
     Place1:patient*      -> All studies for patients starting with 'patient'
     Place1:*             -> All studies for all patients
-    Place1               -> All studies for all patients. Same as Place1:*
 
     Returns
     -------
     StudyQuery
 
-    Notes
-    -----
-    When nothing matches, will return empty list, not error.
     """
 
-    name = "study_uri_query"
+    name = "study_query"
+    # so you can query 'Place:*' instead of 'Place:*/*'
+    convenience_rewrites = {"*": "*/*"}
 
     def convert(self, value, param, ctx):
         """Just validate format <Place>:<patient>/<Key>
 
         Returns
         -------
-        Place, List[StudyURI]
-            The Place instance that was saved in settings + imaging study key
-
+        StudyQuery
         """
 
         if not value:
@@ -143,12 +141,84 @@ class StudyQueryParameterType(ParamType):
 
         # validate format
         try:
-            return StudyQuery.init_from_string(value)
+            query = StudyQuery.init_from_string(value)
+            if query.key_pattern in self.convenience_rewrites:
+                query.key_pattern = self.convenience_rewrites[query.key_pattern]
+            return query
         except (DICOMSyncError, ValueError) as e:
             self.fail(message=str(e))
 
     def __repr__(self):
         return "STUDY_QUERY"
+
+
+class PlaceQueryParameterType(ParamType):
+    """A keyword referencing one or more places
+
+    Examples
+    --------
+    *               -> List all places
+    place*          -> list all places starting with 'place'
+
+
+    """
+
+    name = "place_query"
+    place_query_format = re.compile(r"^[\\*_\w]+$")
+
+    def convert(self, value, param, ctx):
+        """Just validate format <Place>:<patient>/<Key>
+
+        Returns
+        -------
+        string
+        """
+
+        if not value:
+            return None  # is default value if parameter not given
+
+        # validate format
+        if self.place_query_format.search(value):
+            return value
+        else:
+            self.fail(
+                message=f"invalid place query string '{value}'. A place query "
+                f"should contain only astrerisk *, underscore _, "
+                f"letters and numerals"
+            )
+
+    def __repr__(self):
+        return "PLACE_QUERY"
+
+
+class QueryParameterType(ParamType):
+    """A keyword referencing one or more places or one or more studies.
+
+    Generic query so I can fold two different functionalities into the 'find' cli
+    command:
+    1) querying for studies -> 'place:patient/study*'
+    2) querying for places ->  '*' or 'place*'
+
+    """
+
+    name = "query"
+
+    def convert(self, value, param, ctx):
+        """Just validate format <Place>:<patient>/<Key>
+
+        Returns
+        -------
+        Union[QueryParameter]
+
+
+        """
+        if StudyURI.PLACE_SEPERATOR in value:
+            return StudyQueryParameterType().convert(value, param, ctx)
+        else:
+            return PlaceQueryParameterType().convert(value, param, ctx)
+
+    def __repr__(self):
+        return "QUERY"
 
 
 class PlaceKeyParamError(DICOMSyncError):
