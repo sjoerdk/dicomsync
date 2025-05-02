@@ -96,7 +96,7 @@ def add_zipped_dicom_root_folder(context: DicomSyncContext, path_in, key):
     logger.info(f"added {folder} as '{key}'")
 
 
-@click.command(short_help="add ZippedDICOMRootFolder", name="xnat_pre_archive")
+@click.command(short_help="add XNAT pre-archive", name="xnat_pre_archive")
 @click.pass_obj
 @click.argument("key", type=str)
 @click.argument("server", type=str)
