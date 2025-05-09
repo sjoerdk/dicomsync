@@ -256,6 +256,9 @@ class SerializableXNATProjectPreArchive(Place):
 
     _pre_archive: Optional[XNATProjectPreArchive] = None
 
+    def __str__(self):
+        return f"XNAT pre-archive '{self.project}' for user '{self.user}'"
+
     def get_pre_archive(self) -> XNATProjectPreArchive:
         """
 
