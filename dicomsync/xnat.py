@@ -209,6 +209,9 @@ class XNATProjectPreArchive(Place):
     def send_dicom_folder(self, folder: DICOMStudyFolder):
         """Zip this folder to temp dir and then send"""
         logger.info(f"Sending {folder} to {self}")
+        if self.contains(folder):
+            raise StudyAlreadyExistsError(f"Study {folder} is already in {self}")
+
         with tempfile.TemporaryDirectory() as tmpdir:
             logger.debug(f"zipping to temporary zip location {tmpdir}")
             temp_zipped_root = ZippedDICOMRootFolder(path=tmpdir)

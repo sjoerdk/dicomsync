@@ -23,6 +23,7 @@ dicomsync = "dicomsync.cli.entrypoint:main"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.3"
+coverage = "^7.8.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
