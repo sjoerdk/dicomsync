@@ -60,7 +60,7 @@ class SwitchBoard:
         if dry_run:
             logger.debug("--dry-run set. Only simulating copy")
             if hasattr(place, method):
-                logger.info(f"Sending {study} to {type(place).__name__}.{method}")
+                logger.info(f"Sending '{study.key()}' to {place}")
                 return
             else:
                 raise SendNotImplementedError(

@@ -131,8 +131,8 @@ class XNATProjectPreArchive(Place):
         return study
 
     def all_studies(self) -> List[XNATUploadedStudy]:
-        """Info on studies from XNAT server which are still in pre-archive, awaiting
-        import
+        """Info on studies from XNAT server, which are still in pre-archive awaiting
+        import.
 
         """
         subjects = {}
@@ -155,14 +155,14 @@ class XNATProjectPreArchive(Place):
     def imported_studies(self) -> List[XNATUploadedStudy]:
         """All studies that have been imported from pre-archive into the project
         itself. You cannot directly import studies here - studies need to be uploaded
-        to pre-archive first and then imported from there, usually by a project admin
+        to pre-archive first and then imported from there, usually by a project admin.
 
         Notes
         -----
         I believe that the relation between upload parameters and experiment naming
         in XNAT is arbitrary and might be different for every project or even based
         on human input. Therefore, this method can probably not be relied on.
-        Including it here anyway to potentially catch _some_ duplicate uploads
+        Including it here anyway to potentially catch _some_ duplicate uploads.
         """
 
         imported_studies = []
@@ -220,7 +220,7 @@ class XNATProjectPreArchive(Place):
             os.remove(zipped.path)
 
     def assert_has_study(self, zipped_study: ZippedDICOMStudy) -> AssertionResult:
-        """Make sure the zipped study is in XNAT. If not, upload"""
+        """Make sure the zipped study is in XNAT. If not, upload."""
 
         previous_studies = self.imported_studies() + self.all_studies()
 
