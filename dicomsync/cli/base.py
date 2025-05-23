@@ -1,58 +1,98 @@
 """Shared objects for CLI and basic CLI commands"""
 import logging
 import os
-from dataclasses import dataclass
 from functools import wraps
 from pathlib import Path
+from typing import Any
 
 import click
 from click import UsageError
 
+from dicomsync.core import Domain
 from dicomsync.exceptions import (
     DICOMSyncError,
     NoSettingsFoundError,
     PasswordNotFoundError,
 )
 from dicomsync.logs import get_module_logger, install_colouredlogs
-from dicomsync.persistence import DicomSyncSettings, DicomSyncSettingsFromFile
+from dicomsync.persistence import DicomSyncSettingsFromFile
 
 logger = get_module_logger("dicomsync")
 
 
 def configure_logging(verbose):
-    loglevel = logging.INFO
+    """Set logging options based on how many v's were passed to cli. More -vvv is
+    more verbose then -vv
+    """
+
     if verbose == 0:
-        loglevel = logging.INFO
-    if verbose >= 1:
-        loglevel = logging.DEBUG
+        logger.info("Set loglevel INFO")
+        install_colouredlogs(level=logging.INFO)
+    if verbose == 1:
+        logger.info("Set loglevel to DEBUG but keeping hyper-verbose urllib3 at INFO")
+        install_colouredlogs(level=logging.DEBUG)
+        # urllib is *very* verbose. tone it down urllib.
+        logging.getLogger("urllib3").setLevel(logging.INFO)
+    if verbose >= 2:
+        logger.info("Set loglevel to DEBUG. Max verbosity.")
+        install_colouredlogs(level=logging.DEBUG)
 
-    install_colouredlogs(level=loglevel)
-    logging.debug(
-        f"Set loglevel "
-        f"to {logging.getLevelName(logging.getLogger().getEffectiveLevel())}"
-    )
 
-
-@dataclass
 class DicomSyncContext:
-    current_dir: Path
+    """Essential information automatically passed to any dicomsync CLI function"""
 
-    def load_settings(self):
-        """Load settings from current dir
+    def __init__(self, domain: Domain):
+        self._domain = domain
 
-        Raises
-        ------
-        click.UsageError
+    def get_domain(self) -> Domain:
+        """Initialize domain. Delayed init to facility lazy loading in CLI functions.
+        Some functions can be run without settings.
         """
-        return load_settings(folder=self.current_dir)
+        return self._domain
+
+    def save_settings(self) -> Any:
+        """Dummy save settings method here to provide a consistent interface for CLI
+        methods, even if they are called in-memory only during tests
+        """
+        logger.debug(
+            "Save settings called on in-memory base DicomSyncContext. "
+            "Cannot save anything"
+        )
+        return None
 
 
-def get_context() -> DicomSyncContext:
-    return DicomSyncContext(current_dir=Path(os.getcwd()))
+class LazyDicomSyncContext(DicomSyncContext):
+    """Context that only reads settings when they are actually needed.
+
+    Useful to be able to run simple cli functions that do not require settings.
+    """
+
+    def __init__(self, settings_path):
+        super().__init__(domain=None)
+        self.settings_path = settings_path
+
+    def get_domain(self) -> Domain:
+        if not self._domain:
+            settings = load_settings(settings_path=self.settings_path)
+            self._domain = Domain(places=settings.places)
+        return self._domain
+
+    def save_settings(self) -> Path:
+        """Write current domain places and other settings to disk"""
+        settings = DicomSyncSettingsFromFile(
+            places=self.get_domain().places, path=self.settings_path
+        )
+        settings.save()
+        return settings.path
 
 
-def load_settings(folder):
-    """Load settings from given folder
+def init_context() -> DicomSyncContext:
+    settings_path = DicomSyncSettingsFromFile.get_default_file(Path(os.getcwd()))
+    return LazyDicomSyncContext(settings_path=settings_path)
+
+
+def load_settings(settings_path):
+    """Load settings from given path.
 
     Returns
     -------
@@ -62,7 +102,6 @@ def load_settings(folder):
     ------
     click.UsageError
     """
-    settings_path = DicomSyncSettingsFromFile.get_default_file(folder)
     logger.debug(f"Reading settings from {settings_path}")
     try:
         return DicomSyncSettingsFromFile.init_from_file(settings_path)
@@ -78,7 +117,7 @@ def handle_dicomsync_exceptions(func):
     def with_handling(*args, **kwargs):
         try:
             func(*args, **kwargs)
-        except PasswordNotFoundError as e:
+        except (PasswordNotFoundError, DICOMSyncError) as e:
             logger.error(e)
             raise click.UsageError(e) from e
 
@@ -102,32 +141,3 @@ def dicom_sync_command(**kwargs):
         )
 
     return decorated
-
-
-def get_key_for_place(place, settings: DicomSyncSettings):
-    """Find the key that the given place is stored under
-
-    Returns
-    -------
-    Place
-        The first place found in settings that matches the given place
-
-    Raises
-    ------
-    DICOMSyncError
-        if place is not under any key in settings
-
-    Notes
-    -----
-    Will return the first matching place object in settings. If for any reason a place
-    is present twice in settings, only the first one will be returned
-
-    """
-    for key, place_found in settings.places.items():
-        if place.dict() == place_found.dict():
-            return key
-
-    raise DICOMSyncError(
-        f"Place not found in settings. Looked for {place} in "
-        f"{list(settings.places.keys())} but found no match"
-    )

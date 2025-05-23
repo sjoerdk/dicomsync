@@ -3,11 +3,9 @@ from click import BadParameter
 from tabulate import tabulate
 
 from dicomsync.cli.base import DicomSyncContext, dicom_sync_command
-from dicomsync.cli.click_parameter_types import PlaceKeyParameterType
 from dicomsync.filesystem import DICOMRootFolder, ZippedDICOMRootFolder
 from dicomsync.logs import get_module_logger
-from dicomsync.persistence import DicomSyncSettingsFromFile
-from dicomsync.xnat import SerializableXNATProjectPreArchive
+from dicomsync.xnat import XNATProjectPreArchive
 
 logger = get_module_logger("cli.place")
 
@@ -23,7 +21,8 @@ def place(context: DicomSyncContext):
 def cli_list(context: DicomSyncContext):
     """Show all places"""
     table = []
-    for key, place in context.load_settings().places.items():
+    domain = context.get_domain()
+    for key, place in domain.query_places("*").items():
         table.append({"key": key, "place": str(place)})
     click.echo(tabulate(table, headers="keys"))
 
@@ -32,10 +31,8 @@ def cli_list(context: DicomSyncContext):
 @click.pass_obj
 def cli_init(context: DicomSyncContext):
     """Write empty settings file in current dir"""
-    settings_path = DicomSyncSettingsFromFile.get_default_file(context.current_dir)
-    logger.debug(f'Writing empty settings to "{settings_path}"')
-    click.echo("Writing empty settings file to current dir")
-    DicomSyncSettingsFromFile(path=settings_path, places={}).save()
+    path = context.save_settings()
+    logger.debug(f'Wrote empty settings to "{str(path)}"')
 
 
 @click.command(short_help="Remove a place", name="remove")
@@ -43,10 +40,10 @@ def cli_init(context: DicomSyncContext):
 @click.pass_obj
 def cli_remove(context: DicomSyncContext, key):
     """Remove a place by key"""
-    settings = context.load_settings()
+    domain = context.get_domain()
     try:
-        del settings.places[key]
-        settings.save()
+        del domain.places[key]
+        context.save_settings()
     except KeyError as e:
         raise BadParameter(f"place '{key}' does not exist") from e
     logger.info(f'removed place "{key}"')
@@ -64,17 +61,8 @@ def add(context: DicomSyncContext):
 @click.argument("path_in", type=click.Path())
 def add_dicom_root_folder(context: DicomSyncContext, path_in, key):
     """Add folder containing patient/study folders"""
-    settings = context.load_settings()
-    dicom_root_folder = DICOMRootFolder(path=path_in)
-    logger.debug(f"Adding {dicom_root_folder}")
-    places = settings.places
-    if key in places:
-        raise BadParameter(f"{key} already exists")
-    else:
-        settings.places[key] = dicom_root_folder
-        settings.save()
 
-    logger.info(f"added {dicom_root_folder} as '{key}'")
+    add_place(context=context, place=DICOMRootFolder(path=path_in), key=key)
 
 
 @click.command(short_help="add ZippedDICOMRootFolder", name="zipped_root")
@@ -83,17 +71,8 @@ def add_dicom_root_folder(context: DicomSyncContext, path_in, key):
 @click.argument("path_in", type=click.Path())
 def add_zipped_dicom_root_folder(context: DicomSyncContext, path_in, key):
     """Add folder containing patient/zip studies"""
-    settings = context.load_settings()
-    folder = ZippedDICOMRootFolder(path=path_in)
-    logger.debug(f"Adding {folder}")
-    places = settings.places
-    if key in places:
-        raise BadParameter(f"{key} already exists")
-    else:
-        settings.places[key] = folder
-        settings.save()
 
-    logger.info(f"added {folder} as '{key}'")
+    add_place(context=context, place=ZippedDICOMRootFolder(path=path_in), key=key)
 
 
 @click.command(short_help="add XNAT pre-archive", name="xnat_pre_archive")
@@ -104,30 +83,35 @@ def add_zipped_dicom_root_folder(context: DicomSyncContext, path_in, key):
 @click.argument("user", type=str)
 def add_xnat_pre_archive(context: DicomSyncContext, key, server, project, user):
     """Add XNAT pre-archive"""
-    settings = context.load_settings()
-    pre_archive = SerializableXNATProjectPreArchive(
-        server=server, project=project, user=user
+    add_place(
+        context=context,
+        place=XNATProjectPreArchive(server=server, project_name=project, user=user),
+        key=key,
     )
-    logger.debug(f"Adding {pre_archive}")
-    places = settings.places
-    if key in places:
-        raise BadParameter(f"{key} already exists")
-    else:
-        settings.places[key] = pre_archive
-        settings.save()
 
-    logger.info(f"added {pre_archive} as '{key}'")
+
+def add_place(context, place, key):
+    """Add place to the domain in current context and save to settings"""
+    domain = context.get_domain()
+    logger.debug(f"Adding {place}")
+    try:
+        domain.add_place(place, key)
+        context.save_settings()
+    except KeyError as e:
+        raise BadParameter(message=str(e)) from e
+
+    logger.info(f"added {place} as '{key}'")
 
 
 @dicom_sync_command()
-@click.argument("place", type=PlaceKeyParameterType())
-def ls(context: DicomSyncContext, place):
+@click.argument("place_name", type=click.STRING)
+def ls(context: DicomSyncContext, place_name):
     """List studies in a place"""
-    all = place.all_studies()
-    patients = {str(x.subject) for x in all}
-    click.echo(f"Found {len(all)} studies over {len(patients)} patients in {place}")
+    studies = [x for x in context.get_domain().query_studies(place_name + ":*")]
+    patients = {str(x.subject) for x in studies}
+    click.echo(f"Found {len(studies)} studies over {len(patients)} patients in {place}")
     click.echo("-----------------------------------")
-    click.echo("\n".join([x.key() for x in place.all_studies()]))
+    click.echo("\n".join([str(x.key()) for x in studies]))
 
 
 place.add_command(cli_list)

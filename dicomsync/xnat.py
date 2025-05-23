@@ -2,24 +2,18 @@
 import os
 import tempfile
 from contextlib import contextmanager
-from typing import Any, List, Literal, Optional
+from typing import Any, Iterable, List, Literal
 
 import xnat
+from xnat import XNATSession
 from xnat.exceptions import XNATUploadError
 
-from dicomsync.core import (
-    AssertionResult,
-    AssertionStatus,
-    ImagingStudy,
-    Place,
-    Subject,
-)
-from dicomsync.references import StudyKey
+from dicomsync.core import ImagingStudy, Place, Subject
+from dicomsync.references import LocalStudyQuery
 from dicomsync.exceptions import (
     DICOMSyncError,
     PasswordNotFoundError,
     StudyAlreadyExistsError,
-    StudyNotFoundError,
 )
 from dicomsync.filesystem import (
     DICOMStudyFolder,
@@ -29,38 +23,6 @@ from dicomsync.filesystem import (
 from dicomsync.logs import get_module_logger
 
 logger = get_module_logger("xnat")
-
-
-class XNATUploadedStudy(ImagingStudy):
-    """Imaging data related to a single DICOM study
-
-    Notes
-    -----
-    XNAT uses its own data model which intersects with, but does not fully correspond to
-    the DICOM patient>study>series model.
-    See https://wiki.xnat.org/documentation/understanding-the-xnat-data-model
-
-    It seems that XNAT allows a lot of flexibility in defining objects but pays for this
-    with lack of clarity.
-
-    dicomsync wants clarity, so uses XNATUploadedStudy to mean exactly the data
-    belonging to a single study. This means an UploadSession always belongs to a single
-    subject and has a single description, which corresponds as much as possible to a
-    StudyDescription. 'As much as possible' because XNAT
-
-    In addition, XNAT naming is not consistent. For example. When uploading data to an
-    XNAT pre-archive using xnatpy, one can pass the parameter `experiment` which
-    internally are converted to a parameter `name` of and UploadSession objects. In
-    the XNAT website gui this parameter is then displayed as `Session`.
-
-    This confusion is part of the reason for creating this library
-    """
-
-    def __init__(self, subject: Subject, description: str):
-        super().__init__(subject, description)
-
-    def __str__(self):
-        return self.key()
 
 
 class XNATConnectionFactory:
@@ -92,45 +54,71 @@ class XNATConnectionFactory:
             yield connection
 
 
+def load_xnat_password(user):
+    """Get XNAT_PASS from environment
+
+    Raises
+    ------
+    PasswordNotFoundError
+    """
+    try:
+        return os.environ["XNAT_PASS"]
+    except KeyError as e:
+        raise PasswordNotFoundError(
+            f"Cannot get password for user '{user}'. XNAT_PASS not set in"
+            f" environment. Use 'export XNAT_PASS=<pass>' to set it"
+        ) from e
+
+
 class XNATProjectPreArchive(Place):
     """Place where uploaded files end up for an XNAT project. From here, project admins
     can import the files into the XNAT archive proper.
-
-    Notes
-    -----
-    XNAT project itself is not modelled in dicomsync, as we are only
-    interested in uploading studies at the moment. For more functionality interacting
-    with xnat projects, use xnat lib.
-
-    You cannot persist a c
     """
 
-    class_name: str = "XNATProjectPreArchive"  # needed for serialization
+    # needed for pydantic serialization
+    type_: Literal["XNATProjectPreArchive"] = "XNATProjectPreArchive"
 
-    connection: Any  # xnat connection object
+    # xnat connection object.
+    # Leading underscore is excluded from pydantic serialization.
+    _connection: Any = None
+
     project_name: str
+    server: str
+    user: str
+
+    @property
+    def connection(self) -> XNATSession:
+        """Lazy property that only does expensive initialisation when called"""
+        if not self._connection:
+            self._connection = self.create_xnat_connection()
+        return self._connection
+
+    def create_xnat_connection(self):
+        return xnat.connect(
+            server=self.server,
+            user=self.user,
+            password=load_xnat_password(self.user),
+            no_parse_model=False,
+        )
 
     def __str__(self):
         return f"XNATProjectPreArchive '{self.project_name}'"
 
-    def contains(self, study: ImagingStudy) -> bool:
+    def contains(self, study: ImagingStudy[Any]) -> bool:
         """Return true if this place contains this ImagingStudy"""
         return study.key() in (x.key() for x in self.all_studies())
 
-    def get_study(self, key: StudyKey) -> ImagingStudy:
-        """Return the imaging study corresponding to key
+    def _query_studies(self, query: LocalStudyQuery) -> Iterable["XNATUploadedStudy"]:
+        """Return all studies matching to the given query.
 
-        Raises
-        ------
-        StudyNotFoundError
-            If study for key is not there
+        This is the only Place function that needs to be implemented in child classes.
+
+        If nothing is found, returns empty iterable
         """
-        study = next((x for x in self.all_studies() if x.key == key), None)
-        if not study:
-            raise StudyNotFoundError(f"Study '{key}' not found in {self}")
-        return study
+        # TODO: make this yield instead of collecting all first
+        return self.imported_studies() + self.pre_archive_studies()
 
-    def all_studies(self) -> List[XNATUploadedStudy]:
+    def pre_archive_studies(self) -> List["XNATUploadedStudy"]:
         """Info on studies from XNAT server, which are still in pre-archive awaiting
         import.
 
@@ -147,12 +135,12 @@ class XNATProjectPreArchive(Place):
                 subjects[subject_name] = Subject(name=subject_name)
             studies.append(
                 XNATUploadedStudy(
-                    subject=subjects[subject_name], description=description
+                    subject=subjects[subject_name], description=description, place=self
                 )
             )
         return studies
 
-    def imported_studies(self) -> List[XNATUploadedStudy]:
+    def imported_studies(self) -> List["XNATUploadedStudy"]:
         """All studies that have been imported from pre-archive into the project
         itself. You cannot directly import studies here - studies need to be uploaded
         to pre-archive first and then imported from there, usually by a project admin.
@@ -182,7 +170,9 @@ class XNATProjectPreArchive(Place):
 
             imported_studies.append(
                 XNATUploadedStudy(
-                    subject=Subject(name=subject.label), description=item.label
+                    subject=Subject(name=subject.label),
+                    description=item.label,
+                    place=self,
                 )
             )
 
@@ -222,95 +212,28 @@ class XNATProjectPreArchive(Place):
             logger.debug("uploading done. Deleting zip")
             os.remove(zipped.path)
 
-    def assert_has_study(self, zipped_study: ZippedDICOMStudy) -> AssertionResult:
-        """Make sure the zipped study is in XNAT. If not, upload."""
 
-        previous_studies = self.imported_studies() + self.all_studies()
+class XNATUploadedStudy(ImagingStudy[XNATProjectPreArchive]):
+    """Imaging data related to a single DICOM study
 
-        if zipped_study.key() in [x.key() for x in previous_studies]:
-            logger.info(f"Skipping Study {zipped_study} as it is already in {self}")
-            return AssertionResult(status=AssertionStatus.skipped)
-        else:
-            try:
-                self.send_zipped_study(zipped_study)
-                return AssertionResult(
-                    status=AssertionStatus.created,
-                    message=f"created {zipped_study.key()}",
-                )
-            except DICOMSyncError as e:
-                logger.warning(f"Skipping due to Error uploading '{zipped_study}': {e}")
-                return AssertionResult(status=AssertionStatus.error, message=str(e))
+    Notes
+    -----
+    XNAT uses its own data model which intersects with, but does not fully correspond to
+    the DICOM patient>study>series model.
+    See https://wiki.xnat.org/documentation/understanding-the-xnat-data-model
 
+    It seems that XNAT allows a lot of flexibility in defining objects but pays for this
+    with lack of clarity.
 
-class SerializableXNATProjectPreArchive(Place):
-    """An XNATProjectPreArchive that does not require a logged-in session
+    dicomsync wants clarity, so uses XNATUploadedStudy to mean exactly the data
+    belonging to a single study. This means an UploadSession always belongs to a single
+    subject and has a single description, which corresponds as much as possible to a
+    StudyDescription. 'As much as possible' because XNAT
 
-    Uses XNATProjectPreArchive internally. Useful for quick loading and saving.
+    In addition, XNAT naming is not consistent. For example. When uploading data to an
+    XNAT pre-archive using xnatpy, one can pass the parameter `experiment` which
+    internally are converted to a parameter `name` of and UploadSession objects. In
+    the XNAT website gui this parameter is then displayed as `Session`.
+
+    This confusion is part of the reason for creating this library
     """
-
-    # needed for pydantic serialization
-    type_: Literal[
-        "SerializableXNATProjectPreArchive"
-    ] = "SerializableXNATProjectPreArchive"
-
-    server: str
-    user: str
-    project: str
-
-    _pre_archive: Optional[XNATProjectPreArchive] = None
-
-    def __str__(self):
-        return f"XNAT pre-archive '{self.project}' for user '{self.user}'"
-
-    def get_pre_archive(self) -> XNATProjectPreArchive:
-        """
-
-        Raises
-        ------
-        PasswordNotFoundError
-            If password could not be read when initializing connecting to pre_archive
-        """
-        if not self._pre_archive:
-            logger.debug("XNAT pre archive is not initialized yet. Connecting..")
-            self._pre_archive = XNATProjectPreArchive(
-                connection=xnat.connect(
-                    server=self.server,
-                    user=self.user,
-                    password=self.load_xnat_password(self.user),
-                    no_parse_model=False,
-                ),
-                project_name=self.project,
-            )
-        return self._pre_archive
-
-    @staticmethod
-    def load_xnat_password(user):
-        """Get XNAT_PASS from environment
-
-        Raises
-        ------
-        PasswordNotFoundError
-        """
-        try:
-            return os.environ["XNAT_PASS"]
-        except KeyError as e:
-            raise PasswordNotFoundError(
-                f"Cannot get password for user '{user}'. XNAT_PASS not set in"
-                f" environment. Use 'export XNAT_PASS=<pass>' to set it"
-            ) from e
-
-    def contains(self, study: ImagingStudy) -> bool:
-        """Return true if this place contains this ImagingStudy"""
-        return self.get_pre_archive().contains(study)
-
-    def all_studies(self) -> List[XNATUploadedStudy]:
-        """Info on studies from XNAT server which are still in pre-archive, awaiting
-        import
-        """
-        return self.get_pre_archive().all_studies()
-
-    def send_zipped_study(self, zipped_study: ZippedDICOMStudy):
-        return self.get_pre_archive().send_zipped_study(zipped_study)
-
-    def send_dicom_folder(self, folder: DICOMStudyFolder):
-        return self.get_pre_archive().send_dicom_folder(folder)

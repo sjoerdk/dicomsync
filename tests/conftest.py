@@ -9,15 +9,15 @@ from _pytest.fixtures import fixture
 from click.testing import CliRunner
 
 from dicomsync.cli import base
-from dicomsync.cli.base import DicomSyncContext
-from dicomsync.core import Subject
+from dicomsync.cli.base import DicomSyncContext, LazyDicomSyncContext
+from dicomsync.core import Domain, Subject
 from dicomsync.filesystem import (
     DICOMRootFolder,
     DICOMStudyFolder,
     ZippedDICOMRootFolder,
 )
-from dicomsync.persistence import DicomSyncSettings
-from dicomsync.xnat import SerializableXNATProjectPreArchive
+from dicomsync.persistence import DicomSyncSettings, DicomSyncSettingsFromFile
+from dicomsync.xnat import XNATProjectPreArchive
 
 
 @pytest.fixture(autouse=True)
@@ -57,11 +57,11 @@ def a_folder_with_files(tmpdir):
 
 
 @pytest.fixture()
-def a_dicom_study_folder(tmpdir) -> DICOMStudyFolder:
+def a_dicom_study_folder(tmpdir_factory) -> DICOMStudyFolder:
     study_folder = DICOMStudyFolder(
         subject=Subject(name="subject1"),
         description="study_1",
-        path=Path(tmpdir) / "subject1" / "study_1",
+        place=DICOMRootFolder(path=Path(tmpdir_factory.mktemp("a_root_folder"))),
     )
     add_dummy_files(study_folder)
     return study_folder
@@ -73,8 +73,8 @@ def some_settings(a_dicom_root_folder, a_dicom_zipped_folder) -> DicomSyncSettin
     settings = DicomSyncSettings(
         places={"placeA": a_dicom_root_folder, "placeB": a_dicom_zipped_folder}
     )
-    settings.places["placeC"] = SerializableXNATProjectPreArchive(
-        server="https://server.com", user="user", project="project"
+    settings.places["placeC"] = XNATProjectPreArchive(
+        server="https://server.com", user="user", project_name="project"
     )
     return settings
 
@@ -138,6 +138,7 @@ def mock_settings(monkeypatch):
     MockSettings
 
     """
+    raise NotImplementedError("Don't use mock_settings please.")
 
     class MockSettings:
         def __init__(self, settings):
@@ -165,6 +166,30 @@ def mock_copy_functions(monkeypatch):
 
 
 @fixture
-def a_runner(tmpdir):
-    """A click runner that makes sure tmpdir is current dir"""
-    return MockContextCliRunner(mock_context=DicomSyncContext(current_dir=tmpdir))
+def an_empty_settings_file(tmpdir):
+    """An empty settings file on disk"""
+    settings_path = DicomSyncSettingsFromFile.get_default_file(tmpdir)
+    DicomSyncSettingsFromFile.init_from_settings(
+        settings=DicomSyncSettings(places={}), path=Path(settings_path)
+    ).save()
+    return Path(settings_path)
+
+
+@fixture
+def a_file_based_context(an_empty_settings_file):
+    """A dicom sync context linked to an empty file on disk"""
+    return LazyDicomSyncContext(settings_path=an_empty_settings_file)
+
+
+@fixture
+def a_runner(a_file_based_context):
+    """A click runner with in-memory settings and empty domain"""
+    return MockContextCliRunner(mock_context=DicomSyncContext(domain=Domain({})))
+
+
+@fixture
+def a_runner_with_file(a_file_based_context):
+    """A click runner that makes sure tmpdir is current dir and has empty settings
+    file there.
+    """
+    return MockContextCliRunner(mock_context=a_file_based_context)

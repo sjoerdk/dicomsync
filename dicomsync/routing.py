@@ -4,6 +4,8 @@ Sending an imaging study to a place is sometimes implemented, sometimes not.
 Routing logic is done here instead of in each Place definition. Hopefully this is
 clearer
 """
+from typing import Any
+
 from dicomsync.core import ImagingStudy, Place
 from dicomsync.exceptions import DICOMSyncError
 from dicomsync.filesystem import DICOMStudyFolder, ZippedDICOMStudy
@@ -24,7 +26,7 @@ class SwitchBoard:
         ZippedDICOMStudy: "send_zipped_study",
     }
 
-    def send(self, study: ImagingStudy, place: Place, dry_run=False):
+    def send(self, study: ImagingStudy[Any], place: Place, dry_run=False):
         """Send study to place
 
         Parameters
@@ -45,8 +47,8 @@ class SwitchBoard:
 
         Notes
         -----
-        Uses pre-defined send function names to determine whether a place supports
-        a certain type of study.
+        * Uses pre-defined send function names to determine whether a place supports
+          a certain type of study.
 
         """
         # find the method to use for this type of study

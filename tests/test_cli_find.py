@@ -1,25 +1,11 @@
-from pathlib import Path
-from typing import Dict
-
 import pytest
 
 from dicomsync.cli.find import find
-from dicomsync.core import Subject
-from dicomsync.filesystem import DICOMRootFolder, DICOMStudyFolder
-from dicomsync.persistence import SerializablePlace
-from tests.factories import DICOMStudyFolderFactory
+from dicomsync.core import Domain, Subject
+from tests.factories import DICOMRootFolderFactory, DICOMStudyFolderFactory
 
 
-def add_path_on_disk(study_folder: DICOMStudyFolder, tmp_root):
-    """Change study_folder path to a unique valid path that exists on disk"""
-    study_folder.path = (
-        Path(tmp_root) / str(study_folder.subject) / study_folder.description
-    )
-    study_folder.path.mkdir(parents=True, exist_ok=True)
-    return study_folder
-
-
-def convert_to_places(input_dict, tmp_root) -> Dict[str, SerializablePlace]:
+def convert_to_places(input_dict):
     """Quick way to define a DICOMRootFolder with some mock subjects/patients
 
     Parameters
@@ -34,35 +20,33 @@ def convert_to_places(input_dict, tmp_root) -> Dict[str, SerializablePlace]:
 
     """
     places = {}
-    for place, patients in input_dict.items():
-
-        place_path = Path(tmp_root / "a_dicom_root" / place)
-        place_path.mkdir(parents=True, exist_ok=True)
-        places[place] = DICOMRootFolder(path=place_path)
+    for place_name, patients in input_dict.items():
+        place = DICOMRootFolderFactory()
+        places[place_name] = place
 
         for patient, studies in patients.items():
             for study_name in studies:
                 study = DICOMStudyFolderFactory(
-                    subject=Subject(patient), description=study_name
+                    subject=Subject(patient), description=study_name, place=place
                 )
-                study = add_path_on_disk(study, Path(tmp_root))
-                places[place].send_dicom_folder(study)
-    return dict(places)
+                study.path.mkdir(parents=True, exist_ok=False)
+
+    return places
 
 
 @pytest.mark.parametrize(
     "query,expected_output",
     [
-        # ("P:Pat1/St1_A", ["P:Pat1/St1_A"]),
-        # ("P:Pat1/St1*", ["P:Pat1/St1_A"]),
-        # ("P:Pat1/St1*", ["P:Pat1/St1_A"]),
-        # ("P:*/*", ["P:Pat1/St1_A", "P:Pat1/St2_B", "P:Pat2/St3_A", "P:Pat2/St4_B"]),
-        # ("P:*/*B", ["P:Pat1/St2_B", "P:Pat2/St4_B"]),
-        # ("*", ["P", "Root folder"]),
+        ("P:Pat1/St1_A", ["P:Pat1/St1_A"]),
+        ("P:Pat1/St1*", ["P:Pat1/St1_A"]),
+        ("P:Pat1/St1*", ["P:Pat1/St1_A"]),
+        ("P:*/*", ["P:Pat1/St1_A", "P:Pat1/St2_B", "P:Pat2/St3_A", "P:Pat2/St4_B"]),
+        ("P:*/*B", ["P:Pat1/St2_B", "P:Pat2/St4_B"]),
+        ("*", ["P", "Root folder"]),
         ("P:*", ["P:Pat1/St1_A", "P:Pat1/St2_B", "P:Pat2/St3_A", "P:Pat2/St4_B"]),
     ],
 )
-def test_find(mock_settings, a_runner, tmp_path, query, expected_output):
+def test_find(a_runner, tmp_path, query, expected_output):
 
     # Some mock studies with very short names so checking output is easier
     studies_data = {
@@ -71,10 +55,7 @@ def test_find(mock_settings, a_runner, tmp_path, query, expected_output):
             "Pat2": ["St3_A", "St4_B"],
         },
     }
-
-    mock_settings.settings.places = convert_to_places(
-        studies_data, tmp_root=Path(tmp_path)
-    )
+    a_runner.mock_context._domain = Domain(convert_to_places(studies_data))
 
     response = a_runner.invoke(find, args=[query], catch_exceptions=False)
     for expected in expected_output:

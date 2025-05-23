@@ -10,6 +10,10 @@ class StudyNotFoundError(DICOMSyncError):
     pass
 
 
+class PlaceNotFoundError(DICOMSyncError):
+    pass
+
+
 class NoSettingsFoundError(DICOMSyncError):
     pass
 

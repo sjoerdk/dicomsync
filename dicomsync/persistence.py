@@ -7,15 +7,13 @@ from pydantic import BaseModel
 from dicomsync.exceptions import NoSettingsFoundError
 from dicomsync.filesystem import DICOMRootFolder, ZippedDICOMRootFolder
 from dicomsync.logs import get_module_logger
-from dicomsync.xnat import SerializableXNATProjectPreArchive
+from dicomsync.xnat import XNATProjectPreArchive
 
 logger = get_module_logger("persistence")
 
 DEFAULT_SETTINGS_FILE_NAME = "dicomsync.json"
 
-SerializablePlace = (Union)[
-    DICOMRootFolder, ZippedDICOMRootFolder, SerializableXNATProjectPreArchive
-]
+SerializablePlace = Union[DICOMRootFolder, ZippedDICOMRootFolder, XNATProjectPreArchive]
 
 
 class DicomSyncSettings(BaseModel):
@@ -34,15 +32,17 @@ class DicomSyncSettingsFromFile(DicomSyncSettings):
     @classmethod
     def init_from_settings(cls, settings: DicomSyncSettings, path: Path):
         """Convert regular settings into settings from file by adding a path"""
-        return cls(**settings.dict(), path=path)
+        return cls(**settings.model_dump(), path=path)
 
     @classmethod
     def init_from_file(cls, file: Path):
         """Load settings from file"""
         try:
-            return cls.init_from_settings(
-                settings=DicomSyncSettings.parse_file(file), path=file
-            )
+            with open(file) as f:
+                return cls.init_from_settings(
+                    settings=DicomSyncSettings.model_validate_json(f.read()),
+                    path=Path(file),
+                )
         except FileNotFoundError as e:
             raise NoSettingsFoundError(f"No settings file found at '{file}'") from e
 

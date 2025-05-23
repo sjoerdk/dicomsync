@@ -2,11 +2,9 @@
 
 import shutil
 from pathlib import Path
-from typing import Iterable, List, Literal, Union
+from typing import Any, Iterable, Iterator, List, Literal
 
 from dicomsync.core import (
-    AssertionResult,
-    AssertionStatus,
     ImagingStudy,
     Place,
     Subject,
@@ -22,21 +20,15 @@ from dicomsync.logs import get_module_logger
 logger = get_module_logger("local")
 
 
-class DICOMStudyFolder(ImagingStudy):
-    """A local folder containing all the DICOM files for a single imaging study
+class DICOMStudyFolder(ImagingStudy["DICOMRootFolder"]):
+    """A local folder containing all the DICOM files for a single imaging study."""
 
-    description and subject need to be valid_slugs
-    """
+    @property
+    def path(self) -> Path:
+        return self.place.get_path(self.key())
 
-    def __init__(self, subject: Subject, description: str, path: Union[Path, str]):
-        super().__init__(subject, description)
-        self.path = Path(path)
-
-    def all_files(self):
-        return [x for x in self.path.glob("*") if x.is_file()]
-
-    def __str__(self):
-        return f"{self.subject.name} - {self.description}: {self.path}"
+    def all_files(self) -> Iterator[Path]:
+        return self.place.all_files(self.key())
 
 
 class DICOMRootFolder(Place):
@@ -60,36 +52,25 @@ class DICOMRootFolder(Place):
     def __str__(self):
         return f"Root folder at '{self.path}'"
 
-    def contains(self, study: ImagingStudy) -> bool:
-        """Return true if this place contains this ImagingStudy"""
-        return study.key() in (x.key() for x in self.all_studies())
+    def _query_studies(self, query: StudyQuery) -> Iterable[DICOMStudyFolder]:
+        """Return all studies matching to the given query"""
+        for folder in [
+            x
+            for x in self.path.glob(query.query_string().replace(":", ""))
+            if x.is_dir()
+        ]:
+            yield DICOMStudyFolder(
+                subject=Subject(folder.parent.name),
+                description=folder.name,
+                place=self,
+            )
 
-    def get_study(self, key: StudyKey) -> ImagingStudy:
-        """Return the imaging study corresponding to key
+    def get_path(self, key: StudyKey) -> Path:
+        """The location on disk where the files for this study are."""
+        return self.path / key.patient_name / key.study_slug
 
-        Raises
-        ------
-        StudyNotFoundError
-            If study for key is not there
-        """
-        study = next((x for x in self.all_studies() if x.key() == key), None)
-        if not study:
-            raise StudyNotFoundError(f"Study '{key}' not found in {self}")
-        return study
-
-    def all_studies(self) -> List[DICOMStudyFolder]:
-        studies = []
-        for folder in [x for x in self.path.glob("*") if x.is_dir()]:
-            for subfolder in [x for x in folder.glob("*") if x.is_dir()]:
-                studies.append(
-                    DICOMStudyFolder(
-                        subject=Subject(folder.name),
-                        description=subfolder.name,
-                        path=subfolder,
-                    )
-                )
-
-        return studies
+    def all_files(self, key: StudyKey) -> Iterator[Path]:
+        return (x for x in self.get_path(key).glob("*") if x.is_file())
 
     def send_dicom_folder(self, folder: DICOMStudyFolder):
         """Send a DICOMStudyFolder to here"""
@@ -114,22 +95,13 @@ class DICOMRootFolder(Place):
 
         logger.debug(f"copied {count} files to {self}")
 
-    def query_studies(self, query: StudyQuery) -> Iterable[ImagingStudy]:
-        """Return all studies matching to the given query"""
 
+class ZippedDICOMStudy(ImagingStudy["ZippedDICOMRootFolder"]):
+    """A local zipfile containing all the DICOM files for a single imaging study."""
 
-class ZippedDICOMStudy(ImagingStudy):
-    """A local zipfile containing all the DICOM files for a single imaging study
-
-    description and subject need to be valid slugs
-    """
-
-    def __init__(self, subject: Subject, description: str, path: Union[Path, str]):
-        super().__init__(subject, description)
-        self.path = Path(path)
-
-    def __str__(self):
-        return f"ZippedDICOMStudy {self.subject.name} - {self.description}: {self.path}"
+    @property
+    def path(self) -> Path:
+        return self.place.get_path(self.key())
 
 
 class ZippedDICOMRootFolder(Place):
@@ -158,7 +130,7 @@ class ZippedDICOMRootFolder(Place):
     def __str__(self):
         return f"Zipped DICOM Root folder at '{self.path}'"
 
-    def contains(self, study: ImagingStudy) -> bool:
+    def contains(self, study: ImagingStudy[Any]) -> bool:
         """Return true if this place contains this ImagingStudy"""
         return study.key() in (x.key() for x in self.all_studies())
 
@@ -183,7 +155,7 @@ class ZippedDICOMRootFolder(Place):
                     ZippedDICOMStudy(
                         subject=Subject(folder.name),
                         description=zipfile.stem,  # remove .zip extension
-                        path=zipfile,
+                        place=self,
                     )
                 )
 
@@ -211,11 +183,7 @@ class ZippedDICOMRootFolder(Place):
         shutil.make_archive(zip_path.with_suffix(""), "zip", folder.path)
         logger.debug("done")
 
-    def assert_has_zip(self, folder: DICOMStudyFolder) -> AssertionResult:
-        """Make sure the given dicom study folder has a corresponding zip file"""
-        try:
-            self.send_dicom_folder(folder)
-            return AssertionResult(status=AssertionStatus.created)
-        except StudyAlreadyExistsError:
-            logger.debug(f"Zip already existed. Skipping '{folder}'")
-            return AssertionResult(status=AssertionStatus.skipped)
+    def get_path(self, key: StudyKey) -> Path:
+        """The location on disk corresponding to this study."""
+
+        return self.path / key.patient_name / f"{key.study_slug}.zip"

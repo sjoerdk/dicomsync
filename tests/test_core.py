@@ -59,6 +59,8 @@ class ExpectedError:
         ("**", ("**", "", "")),
         ("Pl1:pat*01*/*", ("Pl1", "pat*01*", "*")),
         ("Pl1:*", ("Pl1", "*", "")),
+        ("Pl-dash:*", ("Pl-dash", "*", "")),
+        ("Pl#hash:*", ("Pl#hash", "*", "")),
     ],
 )
 def test_study_query_regex(input_string, expected_output):
@@ -104,6 +106,6 @@ def test_study_query_regex(input_string, expected_output):
 @pytest.mark.parametrize("query_string", ("place:st/ser", "*:st/ser", "plac*:s*/ser"))
 def test_query_string_parsing(query_string):
     """If you create a StudyQuery object from a query string, it should be able to
-    reconstruct that same string
+    reconstruct that same string.
     """
     assert StudyQuery.init_from_string(query_string).query_string() == query_string

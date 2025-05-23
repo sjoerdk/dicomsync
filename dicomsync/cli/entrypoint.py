@@ -1,7 +1,7 @@
 """Entrypoint for dicomsync CLI command. All subcommands are connected here."""
 import click
 
-from dicomsync.cli.base import DicomSyncContext, configure_logging, get_context
+from dicomsync.cli.base import DicomSyncContext, configure_logging, init_context
 from dicomsync.cli.find import find
 from dicomsync.cli.place import place
 from dicomsync.cli.send import cli_send
@@ -19,20 +19,16 @@ def main(ctx, verbose):
     Use the commands below with -h for more info
     """
     configure_logging(verbose)
-    ctx.obj = get_context()
+    if not ctx.obj:
+        ctx.obj = init_context()
 
 
 @click.command(short_help="Show settings in current dir")
 @click.pass_obj
 def status(context: DicomSyncContext):
     """Show all places"""
-    settings = context.load_settings()
-    if hasattr(settings, "path"):
-        click.echo(f"Reading settings from '{settings.path}'")
-    else:
-        click.echo("Reading settings from memory")
 
-    place_keys = list(settings.places.keys())
+    place_keys = list(context.get_domain().places.keys())
     click.echo(f"{len(place_keys)} places defined in settings: {place_keys}")
 
 

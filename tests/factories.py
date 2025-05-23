@@ -1,4 +1,7 @@
+import tempfile
+from pathlib import Path
 from unittest.mock import Mock
+from uuid import uuid4
 
 import factory
 
@@ -14,22 +17,12 @@ class SubjectFactory(factory.Factory):
     name = factory.sequence(lambda n: f"subject{n}")
 
 
-class DICOMStudyFolderFactory(factory.Factory):
-    class Meta:
-        model = DICOMStudyFolder
-
-    subject = factory.SubFactory(SubjectFactory)
-    description = factory.Sequence(lambda n: f"studyfolder{n}")
-    path = factory.Sequence(lambda n: f"path{n}")
-
-
 class ZippedDICOMStudyFactory(factory.Factory):
     class Meta:
         model = ZippedDICOMStudy
 
     subject = factory.SubFactory(SubjectFactory)
     description = factory.Sequence(lambda n: f"study{n}")
-    path = factory.Sequence(lambda n: f"path{n}")
 
 
 class XNATUploadedStudyFactory(factory.Factory):
@@ -41,10 +34,23 @@ class XNATUploadedStudyFactory(factory.Factory):
 
 
 class DICOMRootFolderFactory(factory.Factory):
+    """DICOM Root Folder with valid but uncreated Path"""
+
     class Meta:
         model = DICOMRootFolder
 
-    path = factory.Sequence(lambda n: f"path{n}")
+    path = factory.LazyFunction(
+        lambda: Path(tempfile.gettempdir()) / "dicom_root_folders" / str(uuid4())
+    )
+
+
+class DICOMStudyFolderFactory(factory.Factory):
+    class Meta:
+        model = DICOMStudyFolder
+
+    subject = factory.SubFactory(SubjectFactory)
+    description = factory.Sequence(lambda n: f"studyfolder{n}")
+    place = factory.SubFactory(DICOMRootFolderFactory)
 
 
 def mock_send_methods(place: Place):

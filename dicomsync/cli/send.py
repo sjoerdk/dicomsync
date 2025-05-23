@@ -1,15 +1,9 @@
-from typing import Tuple
-
 import click
 
-from dicomsync.cli.base import DicomSyncContext, dicom_sync_command, get_key_for_place
-from dicomsync.cli.click_parameter_types import (
-    StudyURIParameterType,
-    PlaceKeyParameterType,
-)
-from dicomsync.core import Place
-from dicomsync.references import StudyURI
-from dicomsync.exceptions import StudyNotFoundError
+from dicomsync.cli.base import DicomSyncContext, dicom_sync_command
+from dicomsync.cli.click_parameter_types import StudyQueryParameterType
+
+from dicomsync.references import StudyQuery
 from dicomsync.logs import get_module_logger
 from dicomsync.routing import SwitchBoard
 
@@ -17,32 +11,41 @@ logger = get_module_logger("cli.send")
 
 
 @dicom_sync_command(name="send")
-@click.argument("study_uri", type=StudyURIParameterType())
-@click.argument("place", type=PlaceKeyParameterType())
+@click.argument("study_query", type=StudyQueryParameterType())
+@click.argument("place_key", type=click.STRING)
 @click.option(
     "--dry-run/--no-dry-run", help="Only simulate sending data", default=False
 )
 def cli_send(
     context: DicomSyncContext,
-    study_uri: Tuple[Place, StudyURI],
-    place,
+    study_query: StudyQuery,
+    place_key,
     dry_run,
 ):
-    """Send a single imaging study (format 'place/study') to a place."""
-    source_place, source_study_identifier = study_uri
-    try:
-        source_study = source_place.get_study(source_study_identifier.study_key)
-    except StudyNotFoundError:
-        slug = source_study_identifier.to_slug()
-        logger.debug(
-            f'Study "{source_study_identifier}" not found. Trying slug "{slug}"'
-        )
-        source_study = source_place.get_study(slug.study_key)
+    """Send one or more imaging studies to a place."""
+    logger.info(f"Sending all studies matching {study_query} to '{place_key}'")
 
-    settings = context.load_settings()
-    board = SwitchBoard()
-    logger.info(
-        f"copying '{get_key_for_place(source_place, settings)}/{source_study}' "
-        f"to '{get_key_for_place(place, settings)}'"
-    )
-    board.send(study=source_study, place=place, dry_run=dry_run)
+    domain = context.get_domain()
+    place = domain.get_place(place_key)
+    # collect all studies here to be able to print how many there are
+
+    studies_to_send = [x for x in domain.query_studies(query=study_query)]
+
+    logger.info(f"found {len(studies_to_send)} studies matching {study_query}.")
+
+    logger.debug(f"Checking for existing studies in {place}")
+    studies_dup, studies_org = place.find_duplicates(studies_to_send)
+
+    if studies_org:
+        to_send = "\n".join([str(x) for x in studies_org])
+        logger.info(
+            f"Found '{len(studies_dup)}' duplicate studies." f"Sending rest:{to_send}"
+        )
+        board = SwitchBoard()
+        for study in studies_org:
+            logger.info(f"processing {study}")
+            board.send(study=study, place=place, dry_run=dry_run)
+        logger.debug(f"Finished sending {len(studies_org)} studies for {study_query}")
+    else:
+        logger.info(f"Found {len(studies_dup)} duplicate studies.")
+        logger.info("All studies were duplicates. Not sending anything.")

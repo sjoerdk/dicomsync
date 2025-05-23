@@ -51,7 +51,7 @@ class StudyKey:
 
 
 class StudyURI:
-    """Unique identifier for a study in any place known to dicomsync.
+    """Unique identifier for a study in a domain.
     Format <Place>:<patient>/<study>
 
     """
@@ -95,6 +95,8 @@ class StudyURI:
 class StudyQuery:
     r"""A wildcard-like pattern that can match one or more studies globally.
 
+    A StudyURI with potential wildcards.
+
     Format <Place>:<patient>/<Key>
 
     Examples
@@ -109,20 +111,28 @@ class StudyQuery:
     Notes
     -----
     Explaining the unreadable regex study format
-    "^([\w\*]+):?([\w\*]*)/?([\w\*]*)$"
-    > look for any combination of alphanumeric and asterisk [\w\*]*
+    ^([\w\*#\-_]*):?([\w\*#\-_]*)/?([\w\*#\-_]*)$
+    > look for any combination of alphanumeric and asterisk [\w\*]* and hash and dash
     > make this a capture group ([\w\*]*)
     > the place and patient separators are optional :? and /?
     > but you do need to match from start ^ to end $
 
-    It really works I promise.
+    It really works, I promise.
+
+    Raises
+    ------
+    ValueError
+        If the input string cannot be parsed in the format defined above.
     """
 
-    study_query_format = re.compile(r"^([\w\*]*):?([\w\*]*)/?([\w\*]*)$")
+    study_query_format = re.compile(r"^([\w\*#\-_]*):?([\w\*#\-_]*)/?([\w\*#\-_]*)$")
 
     def __init__(self, place_pattern: str, key_pattern: str):
         self.place_pattern = place_pattern
         self.key_pattern = key_pattern
+
+    def __str__(self):
+        return f"StudyQuery '{self.query_string()}'"
 
     @classmethod
     def parse_query_string(cls, query_string: str) -> Tuple[str, str, str]:
@@ -153,7 +163,7 @@ class StudyQuery:
 
         return cls(place_pattern=place_pattern, key_pattern=key_pattern)
 
-    def query_string(self):
+    def query_string(self) -> str:
         """Unique string representation of this query
 
         the following should hold:
@@ -188,3 +198,8 @@ class LocalStudyQuery(StudyQuery):
         return cls(
             key_pattern=patient_pattern + StudyKey.STUDY_SEPARATOR + study_pattern
         )
+
+    @classmethod
+    def init_from_study_query(cls, study_query: StudyQuery):
+        """Create from StudyQuery, removing the place identifier."""
+        return cls(key_pattern=study_query.key_pattern)

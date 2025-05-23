@@ -1,13 +1,13 @@
 """Take local study folders, zip and upload to xnat"""
 
 import logging
-import os
 
+from dicomsync.core import Domain
 from dicomsync.filesystem import DICOMRootFolder, ZippedDICOMRootFolder
 from pathlib import Path
 
-from dicomsync.ui import summarize_results
-from dicomsync.xnat import XNATConnectionFactory, XNATProjectPreArchive
+from dicomsync.routing import SwitchBoard
+from dicomsync.xnat import XNATProjectPreArchive
 
 # ================= logging ====================================================
 
@@ -16,7 +16,7 @@ logging.getLogger("PIL").level = logging.WARNING
 logging.getLogger("urllib3").level = logging.DEBUG
 logger = logging.getLogger()
 
-# ================= define objects we will be working with =======================
+# ================= define the places we will be working with ==================
 
 # the dicom studies dir in patient/study format
 dicom_root_folder = DICOMRootFolder(path=Path("/tmp/dicomroot"))
@@ -24,24 +24,39 @@ dicom_root_folder = DICOMRootFolder(path=Path("/tmp/dicomroot"))
 # a location for zip files. Local
 zip_folder = ZippedDICOMRootFolder(path=Path("/tmp/zipfiles"))
 
-session_factory = XNATConnectionFactory(
-    server="https://xnathost", user="user", password=os.environ["XNAT_PASS"]
+# Before running, set "XNAT_PASS" environment variable
+# (using for example EXPORT XNAT_PASS='yourpassword')
+xnat_archive = XNATProjectPreArchive(
+    server="https://xnathost", user="user", project_name="myproject"
 )
 
-# ================= Ensure things are like they should be ========================
+# ================= Define convenient helper objects ===========================
 
-# Work with these studies:
-studies = dicom_root_folder.all_studies()
+# To make copying and querying easier, name each place
+domain = Domain(
+    places={
+        "dicom_folder": dicom_root_folder,
+        "zip_folder": zip_folder,
+        "xnat_archive": xnat_archive,
+    }
+)
+
+# To be able to send any study to any place (or receive informative error)
+switchboard = SwitchBoard()
+
+# ================= Ensure things are like they should be ========================
+# Query format is <place_name>:<patient>/<study>. You can use wildcards anywhere.
+
+studies = [x for x in domain.query_studies("dicom_folder:*")]
 logger.info(f"Found {len(studies)} studies")
 
-# These should be zipped
-logger.info("Checking zip dir")
-results = [zip_folder.assert_has_zip(study) for study in studies]
-logger.info(summarize_results(results))
+# zip the studies
+for study in studies:
+    switchboard.send(study=study, place=zip_folder)
 
-# send to xnat
-with session_factory.get_connection() as connection:
-    project = XNATProjectPreArchive(connection=connection, project_name="myproject")
-    logger.info(f"Sending to {project}")
-    results = [project.assert_has_study(study) for study in zip_folder.all_studies()]
-    logger.info(summarize_results(results))
+# send zipped to xnat
+zipped = [x for x in domain.query_studies("zip_folder:*")]
+logger.info(f"Found {len(zipped)} zipped studies")
+logger.info(f"Sending to {xnat_archive}")
+for zip_study in zipped:
+    switchboard.send(study=zip_study, place=xnat_archive)

@@ -6,7 +6,6 @@ from pytest import fixture
 from dicomsync.core import Subject
 from dicomsync.filesystem import (
     DICOMRootFolder,
-    DICOMStudyFolder,
     ZippedDICOMRootFolder,
 )
 from tests.conftest import add_dummy_files
@@ -34,7 +33,6 @@ def test_dicom_root_folder(an_empty_dicom_root_folder, tmpdir):
     a_study = DICOMStudyFolderFactory(
         subject=Subject("test1"),
         description="some_thing_34",
-        path=Path(tmpdir) / "dicom_root_folder",
     )
     add_dummy_files(a_study)
     assert not an_empty_dicom_root_folder.contains(a_study)
@@ -42,12 +40,12 @@ def test_dicom_root_folder(an_empty_dicom_root_folder, tmpdir):
     assert an_empty_dicom_root_folder.contains(a_study)
 
 
-def test_zip(tmpdir, an_empty_zipfile_root_dir, caplog):
+def test_zip(tmpdir_factory, an_empty_zipfile_root_dir, caplog):
     """Send a folder of files to a zipped root folder"""
-    study_folder = DICOMStudyFolder(
+
+    study_folder = DICOMStudyFolderFactory(
         subject=Subject(name="subject1"),
         description="study_1",
-        path=Path(tmpdir) / "subject1" / "study_1",
     )
     add_dummy_files(study_folder)
 
