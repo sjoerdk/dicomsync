@@ -3,6 +3,7 @@ name = "dicomsync"
 version = "1.0.0"
 description = "Synchronize medical imaging studies between storage modalities"
 authors = ["sjoerdk <sjoerd.kerkstra@radboudumc.nl>"]
+readme = "README.md"
 license = "apache"
 
 [tool.poetry.dependencies]

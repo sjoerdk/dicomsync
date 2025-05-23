@@ -8,10 +8,8 @@ logging.getLogger("PIL").level = logging.WARNING
 logging.getLogger("urllib3").level = logging.INFO
 logger = logging.getLogger()
 
-# mrcleandist
-# contrast_radboud
 place = XNATProjectPreArchive(
-    project_name="mrcleandist", server="https://xnat.health-ri.nl", user="skerkstra"
+    project_name="xnat_project_name", server="https:xnat_endpoint", user="username"
 )
 
 domain = Domain(places={"pre_archive": place})
