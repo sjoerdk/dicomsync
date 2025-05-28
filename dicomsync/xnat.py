@@ -1,4 +1,5 @@
 """Handles imaging studies in XNAT servers"""
+import fnmatch
 import os
 import tempfile
 from contextlib import contextmanager
@@ -70,7 +71,7 @@ def load_xnat_password(user):
         ) from e
 
 
-class XNATProjectPreArchive(Place):
+class XNATProjectPreArchive(Place["XNATUploadedStudy"]):
     """Place where uploaded files end up for an XNAT project. From here, project admins
     can import the files into the XNAT archive proper.
     """
@@ -116,7 +117,13 @@ class XNATProjectPreArchive(Place):
         If nothing is found, returns empty iterable
         """
         # TODO: make this yield instead of collecting all first
-        return self.imported_studies() + self.pre_archive_studies()
+        all_studies = self.imported_studies() + self.pre_archive_studies()
+        query_result = [
+            x
+            for x in all_studies
+            if fnmatch.fnmatch(str(x.key()), query.query_string())
+        ]
+        return query_result
 
     def pre_archive_studies(self) -> List["XNATUploadedStudy"]:
         """Info on studies from XNAT server, which are still in pre-archive awaiting

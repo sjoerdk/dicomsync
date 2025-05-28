@@ -128,6 +128,20 @@ def a_dicom_zipped_folder(tmpdir):
 
 
 @fixture
+def a_domain(tmpdir):
+    """A domain containing three different Places with tmp directories"""
+    return Domain(
+        places={
+            "a_folder": DICOMRootFolder(path=Path(tmpdir) / "a_root_folder"),
+            "a_zip_folder": ZippedDICOMRootFolder(
+                path=Path(tmpdir) / "a_zip_root_folder"
+            ),
+            "a_pre_archive": Mock(spec=XNATProjectPreArchive),
+        }
+    )
+
+
+@fixture
 def mock_settings(monkeypatch):
     """Settings loaded by CLI will be empty default settings.
 

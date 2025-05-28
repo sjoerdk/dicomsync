@@ -5,23 +5,8 @@ from pytest import fixture
 
 from dicomsync.cli.entrypoint import main
 from dicomsync.cli.send import cli_send
-from dicomsync.core import Domain
 from dicomsync.filesystem import DICOMRootFolder, ZippedDICOMRootFolder
 from dicomsync.xnat import XNATProjectPreArchive
-
-
-@fixture
-def a_domain(tmpdir):
-    """A domain containing three different Places with tmp directories"""
-    return Domain(
-        places={
-            "a_folder": DICOMRootFolder(path=Path(tmpdir) / "a_root_folder"),
-            "a_zip_folder": ZippedDICOMRootFolder(
-                path=Path(tmpdir) / "a_zip_root_folder"
-            ),
-            "a_pre_archive": Mock(spec=XNATProjectPreArchive),
-        }
-    )
 
 
 @fixture
@@ -58,7 +43,7 @@ def test_send_existing(a_runner, a_domain, a_dicom_root_folder):
     a_domain.places["a_folder"] = a_dicom_root_folder
 
     # nothing has been sent yet to destination
-    assert not a_domain.places["a_zip_folder"].all_studies()
+    assert not [x for x in a_domain.places["a_zip_folder"].all_studies()]
 
     # first send should send the one study
     response = a_runner.invoke(
@@ -69,7 +54,7 @@ def test_send_existing(a_runner, a_domain, a_dicom_root_folder):
     assert response.exit_code == 0
 
     # which then appears in the destination
-    assert len(a_domain.places["a_zip_folder"].all_studies()) == 1
+    assert len([x for x in a_domain.places["a_zip_folder"].all_studies()]) == 1
 
     # Sending again will send nothing extra, though. It should be detected as already there.
     response = a_runner.invoke(

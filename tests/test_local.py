@@ -55,5 +55,5 @@ def test_zip(tmpdir_factory, an_empty_zipfile_root_dir, caplog):
 
     # zip root should now know it has received the study
     assert zip_root.contains(study_folder)
-    zipped_study = zip_root.all_studies()[0]
+    zipped_study = [x for x in zip_root.all_studies()][0]
     assert zipped_study.description == "study_1"

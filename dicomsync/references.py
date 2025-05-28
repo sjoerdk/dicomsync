@@ -10,8 +10,11 @@ Design elements:
 import re
 from typing import Tuple
 
+from dicomsync.logs import get_module_logger
 from dicomsync.strings import make_slug
 from dicomsync.exceptions import DICOMSyncError
+
+logger = get_module_logger("references")
 
 
 class StudyKey:
@@ -28,6 +31,9 @@ class StudyKey:
 
     def __eq__(self, other):
         return str(other) == str(self)
+
+    def __hash__(self):
+        return hash((self.patient_name, self.study_slug))
 
     @classmethod
     def init_from_string(cls, string_in):
@@ -203,3 +209,32 @@ class LocalStudyQuery(StudyQuery):
     def init_from_study_query(cls, study_query: StudyQuery):
         """Create from StudyQuery, removing the place identifier."""
         return cls(key_pattern=study_query.key_pattern)
+
+    def query_string(self) -> str:
+        """Unique string representation of this query
+
+        the following should hold:
+        StudyQuery.init_from_string(string).query_string() == string
+
+        """
+
+        return self.key_pattern
+
+
+CONVENIENCE_REWRITES = {"*": "*/*"}
+
+
+def make_valid_study_query(query: StudyQuery) -> StudyQuery:
+    """Rewrite query from user-friendly to system-friendly.
+
+    Basically so you can write '<place>:*' when you mean '<place>:*/*'. Saves two keys.
+
+    Returns
+    -------
+    StudyQuery
+    """
+    if query.key_pattern in CONVENIENCE_REWRITES:
+        new_pattern = CONVENIENCE_REWRITES[query.key_pattern]
+        logger.debug(f"rewriting '{query.key_pattern}' to {new_pattern}")
+        query.key_pattern = new_pattern
+    return query

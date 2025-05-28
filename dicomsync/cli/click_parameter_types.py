@@ -3,8 +3,11 @@ import re
 
 from click import ParamType
 
-from dicomsync.references import StudyQuery, StudyURI
+from dicomsync.logs import get_module_logger
+from dicomsync.references import StudyQuery, StudyURI, make_valid_study_query
 from dicomsync.exceptions import DICOMSyncError
+
+logger = get_module_logger("cli.click_parameters")
 
 
 class StudyQueryParameterType(ParamType):
@@ -27,8 +30,6 @@ class StudyQueryParameterType(ParamType):
     """
 
     name = "study_query"
-    # so you can query 'Place:*' instead of 'Place:*/*'
-    convenience_rewrites = {"*": "*/*"}
 
     def convert(self, value, param, ctx):
         """Just validate format <Place>:<patient>/<Key>
@@ -44,8 +45,7 @@ class StudyQueryParameterType(ParamType):
         # validate format
         try:
             query = StudyQuery.init_from_string(value)
-            if query.key_pattern in self.convenience_rewrites:
-                query.key_pattern = self.convenience_rewrites[query.key_pattern]
+            query = make_valid_study_query(query)
             return query
         except (DICOMSyncError, ValueError) as e:
             self.fail(message=str(e))
@@ -121,6 +121,57 @@ class QueryParameterType(ParamType):
 
     def __repr__(self):
         return "QUERY"
+
+
+class ForcedStudyQueryParameterType(ParamType):
+    """StudyQueryParameterType that converts place key to StudyQuery.
+
+    Useful if you want to be sure of a StudyQuery return type and want <place>
+    to mean <all studies in place>
+
+    Format <Place>:<patient>/<Key> or just <place>
+
+    Examples
+    --------
+    Place1:patient1/key1 -> same as StudyURI
+    Place1:patient1/key* -> list of studies for 'patient1' starting with 'key'
+    Place1:patient1/*    -> All studies for 'patient1'
+    Place1:patient*      -> All studies for patients starting with 'patient'
+    Place1:*             -> All studies for all patients
+    Place1               -> All studies for all patients
+
+    Returns
+    -------
+    StudyQuery
+
+    """
+
+    name = "study_query"
+
+    def convert(self, value, param, ctx):
+        """
+
+        Returns
+        -------
+        StudyQuery
+        """
+
+        if not value:
+            return None  # is default value if parameter not given
+
+        # a place like 'place1' is changed to
+        if StudyURI.PLACE_SEPERATOR not in value:
+            new_value = value + StudyURI.PLACE_SEPERATOR + "*"
+            logger.debug(
+                f'ForcedStudyQueryParameterType input was place key "{value}"'
+                f', adding study wildcard. New value os "{new_value}"'
+            )
+            value = new_value
+
+        return StudyQueryParameterType().convert(value, param, ctx)
+
+    def __repr__(self):
+        return "STUDY_QUERY"
 
 
 class PlaceKeyParamError(DICOMSyncError):

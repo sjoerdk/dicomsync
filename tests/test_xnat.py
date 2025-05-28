@@ -207,6 +207,12 @@ def test_xnat_query(a_pre_archive):
     """Ask an xnat project which studies it contains"""
     place = a_pre_archive
     domain = Domain(places={"pre_archive": place})
-    studies = [x for x in domain.query_studies("pre_archive:*")]
 
-    assert studies
+    # test different search criteria
+    assert len([x for x in domain.query_studies("pre_archive:*")]) == 20
+    assert len([x for x in domain.query_studies("pre_archive:label*")]) == 10
+    assert len([x for x in domain.query_studies("pre_archive:*7*")]) == 2
+    assert len([x for x in domain.query_studies("pre_archive:label_8/*")]) == 1
+
+    # you can also use wildcards in place names
+    assert len([x for x in domain.query_studies("pre_arch*:label_8/*")]) == 1

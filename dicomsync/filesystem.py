@@ -2,19 +2,20 @@
 
 import shutil
 from pathlib import Path
-from typing import Any, Iterable, Iterator, List, Literal
+from typing import Iterable, Iterator, Literal
 
 from dicomsync.core import (
     ImagingStudy,
     Place,
     Subject,
 )
-from dicomsync.references import StudyKey, StudyQuery
-from dicomsync.exceptions import (
-    DICOMSyncError,
-    StudyAlreadyExistsError,
-    StudyNotFoundError,
+from dicomsync.references import (
+    LocalStudyQuery,
+    StudyKey,
+    StudyQuery,
+    make_valid_study_query,
 )
+from dicomsync.exceptions import DICOMSyncError, StudyAlreadyExistsError
 from dicomsync.logs import get_module_logger
 
 logger = get_module_logger("local")
@@ -31,7 +32,7 @@ class DICOMStudyFolder(ImagingStudy["DICOMRootFolder"]):
         return self.place.all_files(self.key())
 
 
-class DICOMRootFolder(Place):
+class DICOMRootFolder(Place[DICOMStudyFolder]):
     """A folder with patient/study structure.
 
     Each subfolder represents a patient. In each patient folder there is a folder
@@ -56,7 +57,7 @@ class DICOMRootFolder(Place):
         """Return all studies matching to the given query"""
         for folder in [
             x
-            for x in self.path.glob(query.query_string().replace(":", ""))
+            for x in self.path.glob(make_valid_study_query(query).query_string())
             if x.is_dir()
         ]:
             yield DICOMStudyFolder(
@@ -104,7 +105,7 @@ class ZippedDICOMStudy(ImagingStudy["ZippedDICOMRootFolder"]):
         return self.place.get_path(self.key())
 
 
-class ZippedDICOMRootFolder(Place):
+class ZippedDICOMRootFolder(Place[ZippedDICOMStudy]):
     """A folder patient/study.zip structure.
 
     Each subfolder represents a patient. In each patient folder there is a zipfile
@@ -130,36 +131,18 @@ class ZippedDICOMRootFolder(Place):
     def __str__(self):
         return f"Zipped DICOM Root folder at '{self.path}'"
 
-    def contains(self, study: ImagingStudy[Any]) -> bool:
-        """Return true if this place contains this ImagingStudy"""
-        return study.key() in (x.key() for x in self.all_studies())
+    def _query_studies(self, query: LocalStudyQuery) -> Iterable[ZippedDICOMStudy]:
+        """Return all zipped studies matching the given query.
 
-    def get_study(self, key: StudyKey) -> ZippedDICOMStudy:
-        """Return the imaging study corresponding to key
-
-        Raises
-        ------
-        StudyNotFoundError
-            If study for key is not there
+        If nothing is found, returns empty iterable
         """
-        study = next((x for x in self.all_studies() if x.key() == key), None)
-        if not study:
-            raise StudyNotFoundError(f"Study '{key}' not found in {self}")
-        return study
-
-    def all_studies(self) -> List[ZippedDICOMStudy]:
-        studies = []
         for folder in [x for x in self.path.glob("*") if x.is_dir()]:
             for zipfile in [x for x in folder.glob("*.zip") if x.is_file()]:
-                studies.append(
-                    ZippedDICOMStudy(
-                        subject=Subject(folder.name),
-                        description=zipfile.stem,  # remove .zip extension
-                        place=self,
-                    )
+                yield ZippedDICOMStudy(
+                    subject=Subject(folder.name),
+                    description=zipfile.stem,  # remove .zip extension
+                    place=self,
                 )
-
-        return studies
 
     def send_dicom_folder(self, folder: DICOMStudyFolder):
         """Zip this DICOMStudyFolder and save here"""
@@ -187,3 +170,7 @@ class ZippedDICOMRootFolder(Place):
         """The location on disk corresponding to this study."""
 
         return self.path / key.patient_name / f"{key.study_slug}.zip"
+
+    def get_study(self, key: StudyKey) -> ZippedDICOMStudy:
+        study: ZippedDICOMStudy = super().get_study(key)
+        return study

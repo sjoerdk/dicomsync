@@ -12,7 +12,8 @@ from dicomsync.references import LocalStudyQuery, StudyKey, StudyQuery, StudyURI
 logger = get_module_logger("core")
 
 # Facilitate type annotation for specialized Place and ImagingStudy types
-PlaceType = TypeVar("PlaceType", bound="Place")
+PlaceType = TypeVar("PlaceType", bound="Place[Any]")
+StudyType = TypeVar("StudyType", bound="ImagingStudy[Any]")
 
 
 @dataclass
@@ -67,7 +68,7 @@ class ImagingStudy(Generic[PlaceType]):
         return StudyKey(patient_name=self.subject.name, study_slug=self.description)
 
 
-class Place(BaseModel):
+class Place(BaseModel, Generic[StudyType]):
     """Something that contains imaging studies and knows how to handle them.
 
     Responsibilities
@@ -89,7 +90,7 @@ class Place(BaseModel):
       exists.
     """
 
-    def _query_studies(self, query: LocalStudyQuery) -> Iterable[ImagingStudy[Any]]:
+    def _query_studies(self, query: LocalStudyQuery) -> Iterable[StudyType]:
         """Return all studies matching to the given query.
 
         This is the only Place function that needs to be implemented in child classes.
@@ -100,8 +101,8 @@ class Place(BaseModel):
         raise NotImplementedError()
 
     def find_duplicates(
-        self, studies: List[ImagingStudy[PlaceType]]
-    ) -> Tuple[List[ImagingStudy[PlaceType]], List[ImagingStudy[PlaceType]]]:
+        self, studies: List[StudyType]
+    ) -> Tuple[List[StudyType], List[StudyType]]:
         """Split off all studies that already exist in this place
 
         This operation is useful in different places. Opted to define it generally
@@ -122,9 +123,7 @@ class Place(BaseModel):
                 non_duplicates.append(study)
         return duplicates, non_duplicates
 
-    def query_studies(
-        self, query: Union[str, LocalStudyQuery]
-    ) -> Iterable[ImagingStudy["Place"]]:
+    def query_studies(self, query: Union[str, LocalStudyQuery]) -> Iterable[StudyType]:
         """Return all studies matching to the given query.
 
         If nothing is found, returns empty iterable
@@ -147,7 +146,7 @@ class Place(BaseModel):
             list(self.query_studies(LocalStudyQuery(key_pattern=str(study.key()))))
         )
 
-    def get_study(self, key: StudyKey) -> ImagingStudy[Any]:
+    def get_study(self, key: StudyKey) -> StudyType:
         """Return the imaging study corresponding to key.
 
         Raises
@@ -155,13 +154,13 @@ class Place(BaseModel):
         StudyNotFoundError
             If study for key is not there
         """
-        result: Iterable[ImagingStudy["Place"]]
+        result: Iterable[StudyType]
         result = self.query_studies(LocalStudyQuery(key_pattern=str(key)))
         if not result:
             raise StudyNotFoundError(f"study '{str(key)}' not found")
         return list(result)[0]
 
-    def all_studies(self) -> Iterable[ImagingStudy[Any]]:
+    def all_studies(self) -> Iterable[StudyType]:
         """All studies in this place"""
         return self.query_studies(LocalStudyQuery(key_pattern="*"))
 
@@ -190,7 +189,7 @@ class Domain:
       domain, but any data transfer is initiated outside of domain.
     """
 
-    def __init__(self, places: Dict[str, Place]):
+    def __init__(self, places: Dict[str, Place[Any]]):
         self.places = places
 
     def query_studies(
@@ -212,13 +211,13 @@ class Domain:
             *(place.query_studies(query_parsed.key_pattern) for place in places)
         )
 
-    def query_places(self, place_query: str) -> Dict[str, Place]:
+    def query_places(self, place_query: str) -> Dict[str, Place[Any]]:
         """Find all places matching query"""
 
         matching = [x for x in fnmatch.filter(self.places.keys(), place_query)]
         return {x: self.places[x] for x in matching}
 
-    def add_place(self, place: Place, key: str):
+    def add_place(self, place: Place[Any], key: str):
         """Add place under the given key in this domain.
 
         Raises
@@ -231,7 +230,7 @@ class Domain:
         else:
             self.places[key] = place
 
-    def get_place(self, place_key: str) -> Place:
+    def get_place(self, place_key: str) -> Place[Any]:
         """Get the Place reference by place key from this domain.
 
         Raises
@@ -247,7 +246,7 @@ class Domain:
                 f"places: {list(self.places.keys())}"
             ) from e
 
-    def get_key_for_place(self, place: Place):
+    def get_key_for_place(self, place: Place[Any]):
         """Find the key that the given place is stored under
 
         Returns
@@ -273,7 +272,7 @@ class Domain:
                 f"{list(self.places.keys())} but found no match"
             ) from e
 
-    def get_study_uri(self, study: ImagingStudy["Place"]) -> StudyURI:
+    def get_study_uri(self, study: StudyType) -> StudyURI:
         """Generate a unique identifier for study in this domain
 
         Raises

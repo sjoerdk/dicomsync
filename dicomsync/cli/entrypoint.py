@@ -2,6 +2,7 @@
 import click
 
 from dicomsync.cli.base import DicomSyncContext, configure_logging, init_context
+from dicomsync.cli.compare import compare
 from dicomsync.cli.find import find
 from dicomsync.cli.place import place
 from dicomsync.cli.send import cli_send
@@ -36,3 +37,4 @@ main.add_command(status)
 main.add_command(place)
 main.add_command(cli_send)
 main.add_command(find)
+main.add_command(compare)

@@ -1,5 +1,6 @@
 import tempfile
 from pathlib import Path
+from typing import Any
 from unittest.mock import Mock
 from uuid import uuid4
 
@@ -15,6 +16,14 @@ class SubjectFactory(factory.Factory):
         model = Subject
 
     name = factory.sequence(lambda n: f"subject{n}")
+
+
+class DICOMStudyFolderFactoryFactory(factory.Factory):
+    class Meta:
+        model = DICOMStudyFolder
+
+    subject = factory.SubFactory(SubjectFactory)
+    description = factory.Sequence(lambda n: f"study{n}")
 
 
 class ZippedDICOMStudyFactory(factory.Factory):
@@ -53,7 +62,7 @@ class DICOMStudyFolderFactory(factory.Factory):
     place = factory.SubFactory(DICOMRootFolderFactory)
 
 
-def mock_send_methods(place: Place):
+def mock_send_methods(place: Place[Any]):
     """Replace the methods that actually send data by mocks. Make sure no data is
     actually sent
     """

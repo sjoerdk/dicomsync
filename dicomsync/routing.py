@@ -6,7 +6,7 @@ clearer
 """
 from typing import Any
 
-from dicomsync.core import ImagingStudy, Place
+from dicomsync.core import Place, StudyType
 from dicomsync.exceptions import DICOMSyncError
 from dicomsync.filesystem import DICOMStudyFolder, ZippedDICOMStudy
 from dicomsync.logs import get_module_logger
@@ -26,7 +26,7 @@ class SwitchBoard:
         ZippedDICOMStudy: "send_zipped_study",
     }
 
-    def send(self, study: ImagingStudy[Any], place: Place, dry_run=False):
+    def send(self, study: StudyType, place: Place[Any], dry_run=False):
         """Send study to place
 
         Parameters
