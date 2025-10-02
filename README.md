@@ -8,9 +8,9 @@
 
 Synchronize medical imaging studies between storage modalities
 
-* Adds control, logging and error handling to copying medical imaging data
-* Queries and copies to make sure imaging studies exist on both sides
-* Supports DICOM file folders and XNAT pre-archive currently
+* Copy and query medical imaging studies via CLI or python
+* Avoids copying duplicate studies by querying
+* Supports DICOM file folders, zipped studies and XNAT pre-archive
 
 
 ## Installation
@@ -19,7 +19,9 @@ pip install dicomsync
 ```
 
 ## Usage
+Dicomsync works 
 
+### consept 
 See /examples folder
 
 ## Development

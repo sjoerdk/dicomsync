@@ -49,3 +49,26 @@ def test_load_save_settings(tmpdir, some_settings, monkeypatch):
     assert response.exit_code == 0
     for x in ["placeA", "placeB", "placeC"]:
         assert x in response.stdout
+
+
+def test_init(tmp_path, some_settings, monkeypatch):
+    """Simple loading of settings from working dir"""
+    runner = CliRunner()
+
+    # make sure current working dir is set unique to this test
+    monkeypatch.setattr(os, "getcwd", lambda: Path(tmp_path))
+
+    # init should create this file when called
+    expected_settings_file = Path(tmp_path) / DEFAULT_SETTINGS_FILE_NAME
+
+    # the file does not exist at first
+    assert not expected_settings_file.exists()
+
+    # after calling init it should exist
+    response = runner.invoke(main, args=["init"], catch_exceptions=False)
+    assert response.exit_code == 0
+    assert expected_settings_file.exists()
+
+    # calling it again should yield an error
+    response2 = runner.invoke(main, args=["init"], catch_exceptions=False)
+    assert response2.exit_code == 2

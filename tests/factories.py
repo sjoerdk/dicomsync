@@ -7,7 +7,12 @@ from uuid import uuid4
 import factory
 
 from dicomsync.core import Place, Subject
-from dicomsync.filesystem import DICOMRootFolder, DICOMStudyFolder, ZippedDICOMStudy
+from dicomsync.filesystem import (
+    DICOMRootFolder,
+    DICOMStudyFolder,
+    ZippedDICOMRootFolder,
+    ZippedDICOMStudy,
+)
 from dicomsync.xnat import XNATUploadedStudy
 
 
@@ -50,6 +55,17 @@ class DICOMRootFolderFactory(factory.Factory):
 
     path = factory.LazyFunction(
         lambda: Path(tempfile.gettempdir()) / "dicom_root_folders" / str(uuid4())
+    )
+
+
+class ZippedDICOMRootFolderFactory(factory.Factory):
+    """DICOM Root Folder with valid but uncreated Path"""
+
+    class Meta:
+        model = ZippedDICOMRootFolder
+
+    path = factory.LazyFunction(
+        lambda: Path(tempfile.gettempdir()) / "zipped_dicom_root_folders" / str(uuid4())
     )
 
 

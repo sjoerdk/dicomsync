@@ -1,11 +1,18 @@
+from zipfile import ZipFile
+
 import pytest
 
 from dicomsync.cli.find import find
 from dicomsync.core import Domain, Subject
-from tests.factories import DICOMRootFolderFactory, DICOMStudyFolderFactory
+from tests.factories import (
+    DICOMRootFolderFactory,
+    DICOMStudyFolderFactory,
+    ZippedDICOMRootFolderFactory,
+    ZippedDICOMStudyFactory,
+)
 
 
-def convert_to_places(input_dict):
+def convert_to_places_dicom_root(input_dict):
     """Quick way to define a DICOMRootFolder with some mock subjects/patients
 
     Parameters
@@ -34,6 +41,37 @@ def convert_to_places(input_dict):
     return places
 
 
+def convert_to_places_zipped_dicom_root(input_dict):
+    """Quick way to define a ZippedDICOMRootFolder with some mock subjects/patients
+
+    Parameters
+    ----------
+    Dict[str, Dict[str, List[str]]]
+
+    Example
+    -------
+    Example input
+        {"place1": {"Patient1": ["Study1_A", "Study2_B"],
+                    "Patient2": ["Study3_A", "Study4_B"]}}
+
+    """
+    places = {}
+    for place_name, patients in input_dict.items():
+        place = ZippedDICOMRootFolderFactory()
+        places[place_name] = place
+
+        for patient, studies in patients.items():
+            for study_name in studies:
+                study = ZippedDICOMStudyFactory(
+                    subject=Subject(patient), description=study_name, place=place
+                )
+                study.path.parent.mkdir(parents=True, exist_ok=True)
+                with ZipFile(study.path, "x") as fz:
+                    fz.writestr("dummyfile.txt", "dummy_content")
+
+    return places
+
+
 @pytest.mark.parametrize(
     "query,expected_output",
     [
@@ -55,9 +93,27 @@ def test_find(a_runner, tmp_path, query, expected_output):
             "Pat2": ["St3_A", "St4_B"],
         },
     }
-    a_runner.mock_context._domain = Domain(convert_to_places(studies_data))
+    a_runner.mock_context._domain = Domain(convert_to_places_dicom_root(studies_data))
 
     response = a_runner.invoke(find, args=[query], catch_exceptions=False)
     for expected in expected_output:
         assert expected in response.output
+    assert response.exit_code == 0
+
+
+def test_find_zipped_root(a_runner, tmp_path):
+    """Using find on zipped folder"""
+
+    # Some mock studies with very short names so checking output is easier
+    studies_data = {
+        "P": {
+            "Pat1": ["St1_A", "St2_B"],
+            "Pat2": ["St3_A", "St4_B"],
+        },
+    }
+
+    places = convert_to_places_zipped_dicom_root(studies_data)
+    a_runner.mock_context._domain = Domain(places)
+
+    response = a_runner.invoke(find, args=["P:*"], catch_exceptions=False)
     assert response.exit_code == 0

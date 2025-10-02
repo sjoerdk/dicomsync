@@ -2,7 +2,7 @@
 
 Sending an imaging study to a place is sometimes implemented, sometimes not.
 Routing logic is done here instead of in each Place definition. Hopefully this is
-clearer
+clearer.
 """
 from typing import Any
 

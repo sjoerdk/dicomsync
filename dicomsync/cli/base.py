@@ -50,6 +50,13 @@ class DicomSyncContext:
         """
         return self._domain
 
+    @staticmethod
+    def get_cwd():
+        """Current working directory. For CLI file-based operations. Implemented as
+        method here to allow easy overriding in tests.
+        """
+        return os.getcwd()
+
     def save_settings(self) -> Any:
         """Dummy save settings method here to provide a consistent interface for CLI
         methods, even if they are called in-memory only during tests
