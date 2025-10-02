@@ -8,6 +8,7 @@ from dicomsync.filesystem import (
     DICOMRootFolder,
     ZippedDICOMRootFolder,
 )
+from dicomsync.references import StudyQuery
 from tests.conftest import add_dummy_files
 from tests.factories import DICOMStudyFolderFactory
 
@@ -38,6 +39,19 @@ def test_dicom_root_folder(an_empty_dicom_root_folder, tmpdir):
     assert not an_empty_dicom_root_folder.contains(a_study)
     an_empty_dicom_root_folder.send_dicom_folder(a_study)
     assert an_empty_dicom_root_folder.contains(a_study)
+
+
+def test_dicom_root_folder_paths(an_empty_dicom_root_folder):
+    """Exposes a bug with duplicated patient names in path"""
+    # create a single dicom patient/study structure inside root
+
+    root = an_empty_dicom_root_folder
+    expected_path = root.path / "patient1" / "study1"
+    expected_path.mkdir(parents=True, exist_ok=False)
+    studies = list(root._query_studies(query=StudyQuery.init_from_string("patient1*")))
+
+    study = studies[0]
+    assert study.path == expected_path
 
 
 def test_zip(tmpdir_factory, an_empty_zipfile_root_dir, caplog):

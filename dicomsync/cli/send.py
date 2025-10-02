@@ -30,7 +30,6 @@ def cli_send(
     # collect all studies here to be able to print how many there are
 
     studies_to_send = [x for x in domain.query_studies(query=study_query)]
-
     logger.info(f"found {len(studies_to_send)} studies matching {study_query}.")
 
     logger.debug(f"Checking for existing studies in {place}")
@@ -39,7 +38,8 @@ def cli_send(
     if studies_org:
         to_send = "\n".join([str(x) for x in studies_org])
         logger.info(
-            f"Found '{len(studies_dup)}' duplicate studies." f"Sending rest:{to_send}"
+            f"Found '{len(studies_dup)}' duplicate studies."
+            f"Sending the rest: {to_send}"
         )
         board = SwitchBoard()
         for study in studies_org:
