@@ -32,6 +32,7 @@ def cli_send(
     studies_to_send = [x for x in domain.query_studies(query=study_query)]
     logger.info(f"found {len(studies_to_send)} studies matching {study_query}.")
 
+    logger.debug(f"studies found: {[str(x.key()) for x in studies_to_send]}")
     logger.debug(f"Checking for existing studies in {place}")
     studies_dup, studies_org = place.find_duplicates(studies_to_send)
 
@@ -48,4 +49,5 @@ def cli_send(
         logger.debug(f"Finished sending {len(studies_org)} studies for {study_query}")
     else:
         logger.info(f"Found {len(studies_dup)} duplicate studies.")
+        logger.debug(f"Duplicate studies: {[str(x.key()) for x in studies_dup]}")
         logger.info("All studies were duplicates. Not sending anything.")
