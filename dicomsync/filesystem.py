@@ -70,7 +70,9 @@ class DICOMRootFolder(Place[DICOMStudyFolder]):
         study_paths = [x for x in self.path.glob("*/*") if x.is_dir()]
 
         # match using fnmatch. See Notes above for reasoning.
-        query_str = make_valid_study_query(query).query_string()
+        query_str = LocalStudyQuery.init_from_study_query(
+            make_valid_study_query(query)
+        ).query_string()
         matched = [
             x
             for x in study_paths

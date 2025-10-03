@@ -48,7 +48,9 @@ def test_dicom_root_folder_paths(an_empty_dicom_root_folder):
     root = an_empty_dicom_root_folder
     expected_path = root.path / "patient1" / "study1"
     expected_path.mkdir(parents=True, exist_ok=False)
-    studies = list(root._query_studies(query=StudyQuery.init_from_string("patient1*")))
+    studies = list(
+        root._query_studies(query=StudyQuery.init_from_string("anything:patient1*"))
+    )
 
     study = studies[0]
     assert study.path == expected_path
@@ -63,7 +65,9 @@ def test_dicom_root_folder_paths_exact_match(an_empty_dicom_root_folder):
     expected_path.mkdir(parents=True, exist_ok=False)
 
     studies = list(
-        root._query_studies(query=StudyQuery.init_from_string("patient1/study1"))
+        root._query_studies(
+            query=StudyQuery.init_from_string("anything:patient1/study1")
+        )
     )
     assert len(studies) == 1
 

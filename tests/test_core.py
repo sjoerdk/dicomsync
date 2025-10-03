@@ -61,6 +61,7 @@ class ExpectedError:
         ("Pl1:*", ("Pl1", "*", "")),
         ("Pl-dash:*", ("Pl-dash", "*", "")),
         ("Pl#hash:*", ("Pl#hash", "*", "")),
+        ("source:Patient1/study1", ("source", "Patient1", "study1")),
         ("Pl#hash:a.b", ("Pl#hash", "a.b", "")),  # dots in names allowed (happens)
     ],
 )
