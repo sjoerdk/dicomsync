@@ -27,6 +27,24 @@ dicomsync = "dicomsync.cli.entrypoint:main"
 pytest = "^8.3.3"
 coverage = "^7.8.0"
 
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+isolated_build = True
+envlist = py39, py310, py311
+[gh-actions]
+python =
+    3.9: py39
+    3.10: py310
+    3.11: py311
+[testenv]
+allowlist_externals = poetry
+commands =
+    poetry install -v
+    poetry run pytest
+"""
+
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
