@@ -1,5 +1,5 @@
 """Handling imaging studies on local and network filesystem"""
-
+import fnmatch
 import shutil
 from pathlib import Path
 from typing import Iterable, Iterator, Literal
@@ -54,12 +54,30 @@ class DICOMRootFolder(Place[DICOMStudyFolder]):
         return f"Root folder at '{self.path}'"
 
     def _query_studies(self, query: StudyQuery) -> Iterable[DICOMStudyFolder]:
-        """Return all studies matching to the given query"""
-        for folder in [
+        """Return all studies matching to the given query
+
+        Notes
+        -----
+        The incoming query is matched fnmatch-style on all length-2 paths relative to
+        base path. It is *not* a glob-style match. The two are very similar, but glob
+        has undesirable behaviour for patient-name-only wildcards. Specifically,
+        for a query like 'patient*' glob will match only the patient folder '/patient1'
+        put not the full series path like 'patient1/study1'.
+        Query matching is done on the abstract DICOMStudyFolder keys, not on the
+        underlying concrete paths.
+        """
+        # get all patient/study (depth-2) paths.
+        study_paths = [x for x in self.path.glob("*/*") if x.is_dir()]
+
+        # match using fnmatch. See Notes above for reasoning.
+        query_str = make_valid_study_query(query).query_string()
+        matched = [
             x
-            for x in self.path.glob(make_valid_study_query(query).query_string())
-            if x.is_dir()
-        ]:
+            for x in study_paths
+            if fnmatch.fnmatch(str(x.relative_to(self.path)), query_str)
+        ]
+
+        for folder in matched:
             yield DICOMStudyFolder(
                 subject=Subject(folder.parent.name),
                 description=folder.name,
