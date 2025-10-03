@@ -23,14 +23,6 @@ class SubjectFactory(factory.Factory):
     name = factory.sequence(lambda n: f"subject{n}")
 
 
-class DICOMStudyFolderFactoryFactory(factory.Factory):
-    class Meta:
-        model = DICOMStudyFolder
-
-    subject = factory.SubFactory(SubjectFactory)
-    description = factory.Sequence(lambda n: f"study{n}")
-
-
 class ZippedDICOMStudyFactory(factory.Factory):
     class Meta:
         model = ZippedDICOMStudy

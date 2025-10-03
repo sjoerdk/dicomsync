@@ -34,7 +34,7 @@ def cli_send(
 
     logger.debug(f"studies found: {[str(x.key()) for x in studies_to_send]}")
     logger.debug(f"Checking for existing studies in {place}")
-    studies_dup, studies_org = place.find_duplicates(studies_to_send)
+    studies_org, studies_dup = place.find_duplicates(studies_to_send)
 
     if studies_org:
         to_send = "\n".join([str(x) for x in studies_org])

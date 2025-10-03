@@ -54,7 +54,7 @@ class DICOMRootFolder(Place[DICOMStudyFolder]):
         return f"Root folder at '{self.path}'"
 
     def _query_studies(self, query: StudyQuery) -> Iterable[DICOMStudyFolder]:
-        """Return all studies matching to the given query
+        """Return all studies matching the given query
 
         Notes
         -----

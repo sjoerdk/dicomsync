@@ -1,7 +1,9 @@
 import pytest
 
+from dicomsync.filesystem import ZippedDICOMRootFolder
 from dicomsync.strings import make_slug
 from dicomsync.references import StudyKey, StudyQuery, StudyURI
+from tests.factories import DICOMStudyFolderFactory, ZippedDICOMRootFolderFactory
 
 
 @pytest.mark.parametrize("string_in", ["oneword", "an_underscore", "", "234gffj4"])
@@ -111,3 +113,41 @@ def test_query_string_parsing(query_string):
     reconstruct that same string.
     """
     assert StudyQuery.init_from_string(query_string).query_string() == query_string
+
+
+def test_find_duplicates():
+    # two places
+    def study_on_disk():
+        dicom_study = DICOMStudyFolderFactory()
+        dicom_study.path.mkdir(parents=True)
+        return dicom_study
+
+    def number_of_studies(place):
+        return len(list(place.all_studies()))
+
+    # a dicom_root with two studies
+    dicom_study = study_on_disk()
+    dicom_root = dicom_study.place
+    dicom_root.send_dicom_folder(study_on_disk())
+
+    # a zipped root with no studies
+    zipped_root: ZippedDICOMRootFolder = ZippedDICOMRootFolderFactory()
+    zipped_root.path.mkdir(parents=True)
+
+    # at the start
+    assert number_of_studies(dicom_root) == 2
+    assert number_of_studies(zipped_root) == 0
+
+    # transfer one study to zipped_root
+    to_send = list(dicom_root.all_studies())[0]
+    zipped_root.send_dicom_folder(to_send)
+
+    # This should have arrived
+    assert number_of_studies(dicom_root) == 2
+    assert number_of_studies(zipped_root) == 1
+
+    # one should be duplicate
+    duplicates, new = zipped_root.find_duplicates(list(dicom_root.all_studies()))
+
+    assert len(duplicates) == 1
+    assert len(new) == 1
