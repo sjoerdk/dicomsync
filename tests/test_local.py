@@ -54,6 +54,20 @@ def test_dicom_root_folder_paths(an_empty_dicom_root_folder):
     assert study.path == expected_path
 
 
+def test_dicom_root_folder_paths_exact_match(an_empty_dicom_root_folder):
+    """A study query that matches exactly a single study should result in that study."""
+    # create a single dicom patient/study structure inside root
+
+    root = an_empty_dicom_root_folder
+    expected_path = root.path / "patient1" / "study1"
+    expected_path.mkdir(parents=True, exist_ok=False)
+
+    studies = list(
+        root._query_studies(query=StudyQuery.init_from_string("patient1/study1"))
+    )
+    assert len(studies) == 1
+
+
 def test_zip(tmpdir_factory, an_empty_zipfile_root_dir, caplog):
     """Send a folder of files to a zipped root folder"""
 
