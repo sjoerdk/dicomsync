@@ -47,7 +47,6 @@ class ExpectedError:
         ("Pl1:pat*", ("Pl1", "pat*", "")),
         ("Pl1:pat", ("Pl1", "pat", "")),
         ("Pl1:pat:", ExpectedError("Double : not allowed")),
-        ("Pl1.", ExpectedError("no dots allowed")),
         ("*:*/key", ("*", "*", "key")),
         (":pat*/*", ("", "pat*", "*")),
         (":pat*//*", ExpectedError("Double slash not allowed")),
@@ -62,6 +61,7 @@ class ExpectedError:
         ("Pl1:*", ("Pl1", "*", "")),
         ("Pl-dash:*", ("Pl-dash", "*", "")),
         ("Pl#hash:*", ("Pl#hash", "*", "")),
+        ("Pl#hash:a.b", ("Pl#hash", "a.b", "")),  # dots in names allowed (happens)
     ],
 )
 def test_study_query_regex(input_string, expected_output):

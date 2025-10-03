@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "dicomsync"
-version = "1.0.1"
+version = "1.2.0"
 description = "Synchronize medical imaging studies between storage modalities"
 authors = ["sjoerdk <sjoerd.kerkstra@radboudumc.nl>"]
 readme = "README.md"

@@ -131,7 +131,9 @@ class StudyQuery:
         If the input string cannot be parsed in the format defined above.
     """
 
-    study_query_format = re.compile(r"^([\w\*#\-_]*):?([\w\*#\-_]*)/?([\w\*#\-_]*)$")
+    study_query_format = re.compile(
+        r"^([\w\*#\-_]*):?([\w\*#\-_\.]*)/?([\w\*#\-_\.]*)$"
+    )
 
     def __init__(self, place_pattern: str, key_pattern: str):
         self.place_pattern = place_pattern
