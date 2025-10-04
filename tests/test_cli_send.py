@@ -64,3 +64,4 @@ def test_send_existing(a_runner, a_domain, a_dicom_root_folder):
     )
 
     assert not response.exception
+    assert len([x for x in a_domain.places["a_zip_folder"].all_studies()]) == 1

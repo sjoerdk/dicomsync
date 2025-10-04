@@ -5,7 +5,7 @@ from dicomsync import cli
 from dicomsync.cli.compare import compare
 from dicomsync.core import ImagingStudy
 from tests.conftest import create_dummy_files
-from tests.factories import DICOMStudyFolderFactoryFactory
+from tests.factories import DICOMStudyFolderFactory
 
 
 def add_dummy_files(study: ImagingStudy[Any]):
@@ -44,7 +44,7 @@ def test_compare(a_runner, a_domain, monkeypatch):
     # add tree studies to place 'a_folder'
     place_a = a_domain.places["a_folder"]
     for _ in range(3):
-        add_dummy_files(DICOMStudyFolderFactoryFactory(place=place_a))
+        add_dummy_files(DICOMStudyFolderFactory(place=place_a))
 
     # 'compare' output is a long multi-line string. Annoying to assert things about
     #  Create a mock so I can inspect output later

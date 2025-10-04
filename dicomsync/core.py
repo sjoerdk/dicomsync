@@ -124,7 +124,7 @@ class Place(BaseModel, Generic[StudyType]):
         return duplicates, non_duplicates
 
     def query_studies(self, query: Union[str, LocalStudyQuery]) -> Iterable[StudyType]:
-        """Return all studies matching to the given query.
+        """Return all studies matching the given query.
 
         If nothing is found, returns empty iterable
 

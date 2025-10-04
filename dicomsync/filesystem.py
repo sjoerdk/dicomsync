@@ -156,13 +156,22 @@ class ZippedDICOMRootFolder(Place[ZippedDICOMStudy]):
 
         If nothing is found, returns empty iterable
         """
-        for folder in [x for x in self.path.glob("*") if x.is_dir()]:
-            for zipfile in [x for x in folder.glob("*.zip") if x.is_file()]:
-                yield ZippedDICOMStudy(
-                    subject=Subject(folder.name),
-                    description=zipfile.stem,  # remove .zip extension
-                    place=self,
-                )
+        # collect all files that are 2 deep and point to a file
+        candidates = [x for x in self.path.glob("*/*.zip") if (x.is_file())]  # and ]
+        matches = [
+            x
+            for x in candidates
+            if fnmatch.fnmatch(
+                name=str(x.relative_to(self.path)), pat=query.query_string() + ".zip"
+            )
+        ]
+
+        for path in matches:
+            yield ZippedDICOMStudy(
+                subject=Subject(path.parent.name),
+                description=path.stem,  # remove .zip extension
+                place=self,
+            )
 
     def send_dicom_folder(self, folder: DICOMStudyFolder):
         """Zip this DICOMStudyFolder and save here"""
