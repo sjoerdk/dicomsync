@@ -15,7 +15,7 @@ from dicomsync.persistence import (
 from tests.conftest import MockContextCliRunner
 
 
-def test_save_load_to_local_dir(tmpdir):
+def test_save_load_to_local_dir(tmp_path):
     """Test running if there are no settings"""
     # current dir does not contain any settings file
     runner = MockContextCliRunner(
@@ -27,18 +27,18 @@ def test_save_load_to_local_dir(tmpdir):
     assert response.exit_code == 0
 
 
-def test_load_save_settings(tmpdir, some_settings, monkeypatch):
+def test_load_save_settings(tmp_path, some_settings, monkeypatch):
     """Simple loading of settings from working dir"""
 
     # create some settings on disk
-    settings_path = Path(tmpdir) / DEFAULT_SETTINGS_FILE_NAME
+    settings_path = tmp_path / DEFAULT_SETTINGS_FILE_NAME
     settings = DicomSyncSettingsFromFile.init_from_settings(
         settings=some_settings, path=settings_path
     )
     settings.save()
 
     # make sure current working dir is set to test folder
-    monkeypatch.setattr(os, "getcwd", lambda: Path(tmpdir))
+    monkeypatch.setattr(os, "getcwd", lambda: tmp_path)
 
     # now these should be loaded automatically
     runner = CliRunner()

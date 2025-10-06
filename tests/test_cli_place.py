@@ -1,12 +1,10 @@
-from pathlib import Path
-
 from dicomsync.cli.entrypoint import main
 
 
-def test_no_settings_found(a_runner_with_file, tmpdir):
+def test_no_settings_found(a_runner_with_file, tmp_path):
     # current dir does not contain any settings file
     runner = a_runner_with_file
-    runner.mock_context.settings_path = Path(tmpdir) / "non-existant"
+    runner.mock_context.settings_path = tmp_path / "non-existant"
     response = runner.invoke(main, args=["-v", "place", "list"], catch_exceptions=False)
 
     # No settings file should show warning message

@@ -104,7 +104,7 @@ def test_find(a_runner, tmp_path, query, expected_output):
 def test_find_zipped_root(a_runner, tmp_path):
     """Using find on zipped folder"""
 
-    # Some mock studies with very short names so checking output is easier
+    # Some mock studies with very short names so checking output is easier.
     studies_data = {
         "P": {
             "Pat1": ["St1_A", "St2_B"],
