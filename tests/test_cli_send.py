@@ -11,7 +11,6 @@ from dicomsync.xnat import XNATProjectPreArchive
 
 @fixture
 def some_settings(a_runner, tmpdir, mock_settings):
-    # TODO probaly remove completely, use domain
     """Settings with some configured tmp places"""
     mock_settings.settings.places = {
         "a_folder": DICOMRootFolder(path=Path(tmpdir) / "a_root_folder"),
@@ -56,7 +55,8 @@ def test_send_existing(a_runner, a_domain, a_dicom_root_folder):
     # which then appears in the destination
     assert len([x for x in a_domain.places["a_zip_folder"].all_studies()]) == 1
 
-    # Sending again will send nothing extra, though. It should be detected as already there.
+    # Sending again will send nothing extra, though. It should be detected as already
+    # there.
     response = a_runner.invoke(
         cli_send,
         args=["a_folder:patient1/study1", "a_zip_folder"],
