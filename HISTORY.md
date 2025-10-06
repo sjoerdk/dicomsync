@@ -1,5 +1,10 @@
 # History
 
+## V1.2.0 (2025-10-09)
+* Fixes bugs in duplicate finding
+* Fixes bugs query matching for study root folders
+* Moves to uv package management, removes poetry and tox
+
 ## V1.0.1 (2025-05-23)
 * Fixes readme for pypi
 
