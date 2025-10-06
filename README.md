@@ -21,6 +21,18 @@ pip install dicomsync
 ## Usage
 An example of sending some dicom to some place.
 
+## TLDR;
+```bash
+$ dicomsync init
+$ dicomsync place add dicom_root my_studies /tmp/dicom_root   # add dicom place
+$ dicomsync find my_studies:patient1*                         # show studies
+$ dicomsync place add zipped_root zipped /tmp/dicom_zipped    # add zipped place 
+$ dicomsync send my_studies:* zipped                          # send matching studies
+
+$ dicomsync place add xnat_pre_archive the_xnat_project https://xnat.health-ri.nl <xnat_project_name> <xnat_username>
+$  export 'XNAT_PASS=<xnat_password>'                         # set xnat password 
+```
+
 ### Creating and querying a place 
 Say you have some folders containing dicom files in patient/study structure:
 ```
