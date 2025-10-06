@@ -8,6 +8,8 @@
 
 Synchronize medical imaging studies between storage modalities
 
+![dicomsync logo](docs/resources/dicomsync.png)
+
 * Copy and query medical imaging studies via CLI or python
 * Avoids copying duplicate studies by querying
 * Supports DICOM file folders, zipped studies and XNAT pre-archive
