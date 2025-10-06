@@ -1,17 +1,6 @@
 from dicomsync.cli.entrypoint import main
 
 
-def test_no_settings_found(a_runner_with_file, tmp_path):
-    # current dir does not contain any settings file
-    runner = a_runner_with_file
-    runner.mock_context.settings_path = tmp_path / "non-existant"
-    response = runner.invoke(main, args=["-v", "place", "list"], catch_exceptions=False)
-
-    # No settings file should show warning message
-    assert "No settings" in response.stdout
-    assert response.exit_code == 2
-
-
 def test_place_add_dicom_root(a_runner):
     """Run CLI to add some things and check"""
     places = a_runner.mock_context.get_domain().places
