@@ -191,6 +191,13 @@ class XNATProjectPreArchive(Place["XNATUploadedStudy"]):
             raise StudyAlreadyExistsError(f"Study {zipped_study} is already in {self}")
 
         logger.info(f"Uploading {zipped_study}")
+        logger.debug(
+            f"calling connection.services.import_({zipped_study.path},"
+            f"project={self.project_name},"
+            f"subject={zipped_study.subject.name},"
+            f"experiment={zipped_study.description},"
+            f"destination=/prearchive)"
+        )
         try:
             self.connection.services.import_(
                 str(zipped_study.path),
