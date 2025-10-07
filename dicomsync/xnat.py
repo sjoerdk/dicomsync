@@ -208,7 +208,7 @@ class XNATProjectPreArchive(Place["XNATUploadedStudy"]):
             )
         except XNATUploadError as e:
             raise DICOMSyncError(f"Upload failed for '{zipped_study}'") from e
-        logger.debug(f"Uploading finished: {zipped_study}")
+        logger.info(f"Uploading finished: {zipped_study}")
 
     def send_dicom_folder(self, folder: DICOMStudyFolder):
         """Zip this folder to temp dir and then send"""
