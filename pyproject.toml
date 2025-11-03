@@ -1,6 +1,6 @@
 [project]
 name = "dicomsync"
-version = "1.2.0"
+version = "1.3.0"
 description = "Synchronize medical imaging studies between storage modalities"
 authors = [{ name = "sjoerdk", email = "sjoerd.kerkstra@radboudumc.nl" }]
 requires-python = "~=3.10"
@@ -21,6 +21,7 @@ classifiers = [
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
 
 ]
 
