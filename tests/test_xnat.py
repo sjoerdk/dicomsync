@@ -134,7 +134,7 @@ def create_xnat_response(
             )
     # Run all generators at the same time and create tablerows out of the values.
     # Sorry for this unreadable statement. I'm just generating test data..
-    table_params = [dict(list(x)) for x in list(zip(*generators.values()))]
+    table_params = [dict(list(x)) for x in list(zip(*generators.values(), strict=True))]
     return list(TableRow(**row) for row in table_params)
 
 
