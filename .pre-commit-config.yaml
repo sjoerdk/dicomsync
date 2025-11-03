@@ -24,11 +24,11 @@ repos:
           - mccabe
           - yesqa
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: 'v0.942'
+    rev: 'v1.18.2'
     hooks:
       - id: mypy
         additional_dependencies:
-          - "pydantic>=1.10.4"
+          - "pydantic>=2.12.3"
           - types-requests
           - types-python-slugify
           - types-tabulate
