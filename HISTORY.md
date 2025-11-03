@@ -1,5 +1,10 @@
 # History
 
+## V1.3.0 (2025-11-03)
+* Drops python 3.9
+* Adds python 3.12
+* Updates XNAT
+ 
 ## V1.2.0 (2025-10-09)
 * Fixes bugs in duplicate finding
 * Fixes bugs query matching for study root folders
