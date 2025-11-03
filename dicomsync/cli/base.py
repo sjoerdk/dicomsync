@@ -15,7 +15,7 @@ from dicomsync.exceptions import (
     PasswordNotFoundError,
 )
 from dicomsync.logs import get_module_logger, install_colouredlogs
-from dicomsync.persistence import DicomSyncSettingsFromFile
+from dicomsync.persistence import DicomSyncSettingsFromFile, ensure_serializable
 
 logger = get_module_logger("dicomsync")
 
@@ -87,7 +87,11 @@ class LazyDicomSyncContext(DicomSyncContext):
     def save_settings(self) -> Path:
         """Write current domain places and other settings to disk"""
         settings = DicomSyncSettingsFromFile(
-            places=self.get_domain().places, path=self.settings_path
+            places={
+                key: ensure_serializable(value)
+                for key, value in self.get_domain().places.items()
+            },
+            path=self.settings_path,
         )
         settings.save()
         return settings.path

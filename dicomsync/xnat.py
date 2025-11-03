@@ -3,6 +3,7 @@ import fnmatch
 import os
 import tempfile
 from contextlib import contextmanager
+from pathlib import Path
 from typing import Any, Iterable, List, Literal
 
 import xnat
@@ -218,7 +219,7 @@ class XNATProjectPreArchive(Place["XNATUploadedStudy"]):
 
         with tempfile.TemporaryDirectory() as tmpdir:
             logger.debug(f"zipping to temporary zip location {tmpdir}")
-            temp_zipped_root = ZippedDICOMRootFolder(path=tmpdir)
+            temp_zipped_root = ZippedDICOMRootFolder(path=Path(tmpdir))
             temp_zipped_root.send_dicom_folder(folder)
             zipped = temp_zipped_root.get_study(folder.key())
             logger.debug("zipping done. On to upload")
