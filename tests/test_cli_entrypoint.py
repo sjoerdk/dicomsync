@@ -7,6 +7,7 @@ from click.testing import CliRunner
 from dicomsync.cli.entrypoint import main
 from dicomsync.persistence import (
     DEFAULT_SETTINGS_FILE_NAME,
+    DicomSyncSettings,
     DicomSyncSettingsFromFile,
 )
 
@@ -71,3 +72,22 @@ def test_init(tmp_path, some_settings, monkeypatch):
     # calling it again should yield an error
     response2 = runner.invoke(main, args=["init"], catch_exceptions=False)
     assert response2.exit_code == 2
+
+
+def test_load_save_timout():
+    """Check whether XNAT optional timout setting can be ommitted and loaded"""
+
+    # load settings without explicit timeout settings. This should work.
+    loaded = DicomSyncSettings.model_validate_json(
+        '{"places":{"xnat":{"type_":"XNATProjectPreArchive","project_name":"project_0","server":"https://server_0.com","user":"user_0"}}}'
+    )
+    # and default to None
+    assert loaded.places["xnat"].timeout is None
+
+    # now set it
+    loaded.places["xnat"].timeout = 30
+
+    # persist to json and load back
+    reloaded = DicomSyncSettings.model_validate_json(loaded.model_dump_json())
+    # should have been persisted
+    assert reloaded.places["xnat"].timeout == 30

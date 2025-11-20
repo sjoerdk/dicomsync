@@ -4,7 +4,7 @@ import os
 import tempfile
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Iterable, List, Literal
+from typing import Any, Iterable, List, Literal, Optional
 
 import xnat
 from xnat import XNATSession
@@ -75,6 +75,19 @@ def load_xnat_password(user):
 class XNATProjectPreArchive(Place["XNATUploadedStudy"]):
     """Place where uploaded files end up for an XNAT project. From here, project admins
     can import the files into the XNAT archive proper.
+
+    Parameters
+    ----------
+    project_name:
+        XNAT project name
+    server:
+        url of XNAT endpoint to talk to
+    user:
+        username to pass with requests to endpoint
+    timeout:
+        number of seconds to wait for server response before raising
+        requests.exceptions.Timeout. Optional. Defaults to None, in which case no
+        timeout is set.
     """
 
     # needed for pydantic serialization
@@ -87,6 +100,7 @@ class XNATProjectPreArchive(Place["XNATUploadedStudy"]):
     project_name: str
     server: str
     user: str
+    timeout: Optional[int] = None
 
     @property
     def connection(self) -> XNATSession:
@@ -187,6 +201,12 @@ class XNATProjectPreArchive(Place["XNATUploadedStudy"]):
         return imported_studies
 
     def send_zipped_study(self, zipped_study: ZippedDICOMStudy):
+        """
+
+        Raises
+        ------
+        requests.exceptions.Timeout
+        """
         logger.info(f"Uploading to {self}: {zipped_study}")
         if self.contains(zipped_study):
             raise StudyAlreadyExistsError(f"Study {zipped_study} is already in {self}")
@@ -197,7 +217,8 @@ class XNATProjectPreArchive(Place["XNATUploadedStudy"]):
             f"project={self.project_name},"
             f"subject={zipped_study.subject.name},"
             f"experiment={zipped_study.description},"
-            f"destination=/prearchive)"
+            f"destination=/prearchive)",
+            f"timout={self.timeout}",
         )
         try:
             self.connection.services.import_(
@@ -206,6 +227,7 @@ class XNATProjectPreArchive(Place["XNATUploadedStudy"]):
                 subject=zipped_study.subject.name,
                 experiment=zipped_study.description,
                 destination="/prearchive",
+                timeout=self.timeout,
             )
         except XNATUploadError as e:
             raise DICOMSyncError(f"Upload failed for '{zipped_study}'") from e

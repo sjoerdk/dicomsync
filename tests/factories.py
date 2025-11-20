@@ -13,7 +13,7 @@ from dicomsync.filesystem import (
     ZippedDICOMRootFolder,
     ZippedDICOMStudy,
 )
-from dicomsync.xnat import XNATUploadedStudy
+from dicomsync.xnat import XNATProjectPreArchive, XNATUploadedStudy
 
 
 class SubjectFactory(factory.Factory):
@@ -68,6 +68,16 @@ class DICOMStudyFolderFactory(factory.Factory):
     subject = factory.SubFactory(SubjectFactory)
     description = factory.Sequence(lambda n: f"studyfolder{n}")
     place = factory.SubFactory(DICOMRootFolderFactory)
+
+
+class XNATProjectPreArchiveFactory(factory.Factory):
+    class Meta:
+        model = XNATProjectPreArchive
+
+    server = factory.Sequence(lambda n: f"https://server_{n}.com")
+    user = factory.Sequence(lambda n: f"user_{n}")
+    project_name = factory.Sequence(lambda n: f"project_{n}")
+    timeout = None
 
 
 def mock_send_methods(place: Place[Any]):
