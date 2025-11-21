@@ -12,7 +12,7 @@ dependencies = [
     "tabulate>=0.9.0,<0.10",
     "jinja2>=3.1.6,<4",
     "setuptools>=80.9.0",
-    "xnat>=0.8.0",
+    "xnat>=0.7.2",
     "pydantic>=2.12.3",
 ]
 
