@@ -42,8 +42,10 @@ class SwitchBoard:
 
         Raises
         ------
-        SendNotImplementedError
+        SendNotImplementedError (DICOMSyncError)
             If sending the study to this place is not possible
+        DICOMSyncError
+            If anything else goes wrong during sending
 
         Notes
         -----
@@ -72,7 +74,7 @@ class SwitchBoard:
                 )
 
         try:
-            getattr(place, method)(study)
+            getattr(place, method)(study)  # call the send method.
         except AttributeError as e:
             raise SendNotImplementedError(
                 f"No method '{type(place).__name__}.{method}()' found. You cannot "

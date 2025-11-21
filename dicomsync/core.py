@@ -2,7 +2,7 @@ import fnmatch
 from dataclasses import dataclass
 from enum import Enum
 from itertools import chain
-from typing import Any, Dict, Generic, Iterable, List, Tuple, TypeVar, Union
+from typing import Any, Dict, Generic, Iterable, List, Optional, Tuple, TypeVar, Union
 from pydantic import BaseModel
 
 from dicomsync.exceptions import PlaceNotFoundError, StudyNotFoundError
@@ -298,5 +298,5 @@ class AssertionResult(BaseModel):
     were taken.
     """
 
-    status: AssertionStatus = AssertionStatus.not_set
-    message: str = ""
+    status: Optional[AssertionStatus] = AssertionStatus.not_set
+    message: Optional[str] = ""

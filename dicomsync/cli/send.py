@@ -5,7 +5,7 @@ from dicomsync.cli.click_parameter_types import StudyQueryParameterType
 
 from dicomsync.references import StudyQuery
 from dicomsync.logs import get_module_logger
-from dicomsync.routing import SwitchBoard
+from dicomsync.batch import send_studies, summarize_results
 
 logger = get_module_logger("cli.send")
 
@@ -37,16 +37,13 @@ def cli_send(
     studies_dup, studies_org = place.find_duplicates(studies_to_send)
 
     if studies_org:
-        to_send = "\n".join([str(x) for x in studies_org])
+
         logger.info(
-            f"Found '{len(studies_dup)}' duplicate studies."
-            f"Sending the rest: {to_send}"
+            f"Found '{len(studies_dup)}' duplicate studies." f"Sending the rest"
         )
-        board = SwitchBoard()
-        for study in studies_org:
-            logger.info(f"processing {study}")
-            board.send(study=study, place=place, dry_run=dry_run)
+        results = send_studies(studies_org, place, dry_run)
         logger.debug(f"Finished sending {len(studies_org)} studies for {study_query}")
+        logger.info(summarize_results(results))
     else:
         logger.info(f"Found {len(studies_dup)} duplicate studies.")
         logger.debug(f"Duplicate studies: {[str(x.key()) for x in studies_dup]}")

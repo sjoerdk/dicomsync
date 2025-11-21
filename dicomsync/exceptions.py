@@ -20,3 +20,7 @@ class NoSettingsFoundError(DICOMSyncError):
 
 class PasswordNotFoundError(DICOMSyncError):
     pass
+
+
+class DICOMSyncTimeoutError(DICOMSyncError):
+    pass

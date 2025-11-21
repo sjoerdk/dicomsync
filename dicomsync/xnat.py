@@ -205,7 +205,11 @@ class XNATProjectPreArchive(Place["XNATUploadedStudy"]):
 
         Raises
         ------
-        requests.exceptions.Timeout
+        DICOMSyncTimeoutError (DICOMSyncError):
+            If XNAT server does not respond for longer than this.timeout seconds
+        DICOMSyncError:
+            If anything else goes wrong during upload
+
         """
         logger.info(f"Uploading to {self}: {zipped_study}")
         if self.contains(zipped_study):
