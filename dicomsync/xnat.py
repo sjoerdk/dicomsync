@@ -224,8 +224,8 @@ class XNATProjectPreArchive(Place["XNATUploadedStudy"]):
             f"project={self.project_name},"
             f"subject={zipped_study.subject.name},"
             f"experiment={zipped_study.description},"
-            f"destination=/prearchive)",
-            f"timout={self.timeout}",
+            f"destination=/prearchive),"
+            f"timout={self.timeout}"
         )
         try:
             self.connection.services.import_(
