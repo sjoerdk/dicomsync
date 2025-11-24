@@ -2,6 +2,8 @@
 import fnmatch
 import os
 import tempfile
+import requests
+
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Iterable, List, Literal, Optional
@@ -14,6 +16,7 @@ from dicomsync.core import ImagingStudy, Place, Subject
 from dicomsync.references import LocalStudyQuery
 from dicomsync.exceptions import (
     DICOMSyncError,
+    DICOMSyncTimeoutError,
     PasswordNotFoundError,
     StudyAlreadyExistsError,
 )
@@ -235,6 +238,9 @@ class XNATProjectPreArchive(Place["XNATUploadedStudy"]):
             )
         except XNATUploadError as e:
             raise DICOMSyncError(f"Upload failed for '{zipped_study}'") from e
+        except requests.Timeout as e:
+            raise DICOMSyncTimeoutError(f"Upload timed out for '{zipped_study}'") from e
+
         logger.info(f"Uploading finished: {zipped_study}")
 
     def send_dicom_folder(self, folder: DICOMStudyFolder):
