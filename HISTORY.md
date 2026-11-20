@@ -1,5 +1,10 @@
 # History
 
+## V1.3.1 (2026-11-20)
+* Updates xnat to 0.8.1
+* Improves XNAT performance by reducing calls to server
+* Adds default timeout for xnat server response
+
 ## V1.3.0 (2025-11-03)
 * Drops python 3.9
 * Adds python 3.12
