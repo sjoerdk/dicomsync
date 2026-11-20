@@ -116,8 +116,16 @@ class Place(BaseModel, Generic[StudyType]):
         """
         duplicates = []
         non_duplicates = []
+
+        already_there = [
+            study
+            for study, is_there in zip(
+                studies, self.contains_multiple(studies), strict=True
+            )
+            if is_there
+        ]
         for study in studies:
-            if self.contains(study):
+            if study in already_there:
                 duplicates.append(study)
             else:
                 non_duplicates.append(study)
@@ -145,6 +153,12 @@ class Place(BaseModel, Generic[StudyType]):
         return bool(
             list(self.query_studies(LocalStudyQuery(key_pattern=str(study.key()))))
         )
+
+    def contains_multiple(
+        self, studies: Iterable[ImagingStudy[PlaceType]]
+    ) -> Tuple[bool, ...]:
+        """Returns true for each ImagingStudy if this place contains it."""
+        return tuple(bool(self.contains(study)) for study in studies)
 
     def get_study(self, key: StudyKey) -> StudyType:
         """Return the imaging study corresponding to key.
