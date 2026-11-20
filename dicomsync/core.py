@@ -155,7 +155,7 @@ class Place(BaseModel, Generic[StudyType]):
         )
 
     def contains_multiple(
-        self, studies: Iterable[ImagingStudy[PlaceType]]
+        self, studies: Iterable[ImagingStudy[Any]]
     ) -> Tuple[bool, ...]:
         """Returns true for each ImagingStudy if this place contains it."""
         return tuple(bool(self.contains(study)) for study in studies)

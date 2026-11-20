@@ -6,7 +6,7 @@ import requests
 
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Iterable, List, Literal, Optional
+from typing import Any, Iterable, List, Literal, Optional, Tuple
 
 import xnat
 from xnat import XNATSession
@@ -126,6 +126,17 @@ class XNATProjectPreArchive(Place["XNATUploadedStudy"]):
     def contains(self, study: ImagingStudy[Any]) -> bool:
         """Return true if this place contains this ImagingStudy"""
         return study.key() in (x.key() for x in self.all_studies())
+
+    def contains_multiple(
+        self, studies: Iterable[ImagingStudy[Any]]
+    ) -> Tuple[bool, ...]:
+        """Returns true for each ImagingStudy if this place contains it.
+
+        Overwrites base method to make sure multiple calls do not call the slow XNAT
+        interface multiple times
+        """
+        all_study_keys = [x.key() for x in self.all_studies()]
+        return tuple(map(lambda x: x.key() in all_study_keys, studies))
 
     def _query_studies(self, query: LocalStudyQuery) -> Iterable["XNATUploadedStudy"]:
         """Return all studies matching to the given query.

@@ -12,7 +12,7 @@ from xnat.prearchive import Prearchive, PrearchiveSession
 from dicomsync.core import Domain, Subject
 from dicomsync.filesystem import DICOMRootFolder, DICOMStudyFolder
 from dicomsync.xnat import XNATProjectPreArchive
-from tests.factories import DICOMStudyFolderFactory
+from tests.factories import DICOMStudyFolderFactory, XNATUploadedStudyFactory
 from tests.conftest import add_dummy_files
 
 
@@ -216,3 +216,18 @@ def test_xnat_query(a_pre_archive):
 
     # you can also use wildcards in place names
     assert len([x for x in domain.query_studies("pre_arch*:label_8/*")]) == 1
+
+
+def test_xnat_find_duplicates(a_pre_archive):
+    duplicates, non_duplicates = a_pre_archive.find_duplicates(
+        [XNATUploadedStudyFactory(place=a_pre_archive)]
+    )
+    assert non_duplicates
+    assert duplicates == []
+
+    # now check that duplicates are indeed found
+    duplicates, non_duplicates = a_pre_archive.find_duplicates(
+        a_pre_archive.all_studies()[2:6]
+    )
+    assert non_duplicates == []
+    assert len(duplicates) == 4
